@@ -103,3 +103,28 @@ A cron job is a scheduled task that runs automatically at specific times. Here's
 4. Save the file and close the editor.
 
 Now your server will automatically restart every day at 04:10 AM!
+
+## Customizing Start Parameters in `start_stop.sh` Script
+
+The `start_stop.sh` script contains start parameters for the ARK server, which dictate the map being played and how the server is configured. By default, the map is set to "TheIsland". To play on a different map, you need to change the start parameters.
+
+### Example: Switching to the "Scorched Earth" Map
+
+1. Open the `start_stop.sh` script in a text editor like nano.
+2. In the beginning, there is a line that starts with `STARTPARAMS=`.
+3. Replace `TheIsland_WP` with `ScorchedEarth_WP` to switch the map.
+
+### Example: Switching to the "Svartalfheim" Mod Map
+
+To play on the "Svartalfheim" map, which is a mod map, you need to specify the mod ID. Here's how:
+
+1. Change the map designation to `Svartalfheim_WP`.
+2. Add `-mod=893657` at the end of the parameters to load the mod.
+
+The modified line should look like this:
+
+
+STARTPARAMS=“Svartalfheim_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mod=893657”
+
+
+Save the changes and restart the server to load the new map with the desired settings.
