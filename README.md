@@ -69,3 +69,10 @@ The script provides you with the following options:
 
 Congratulations! You have successfully installed and configured your server.
 
+### How to open ports in Linux:
+
+To open these ports on your Linux server, you can use `iptables`, a powerful firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
+
+```bash
+sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
+sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
