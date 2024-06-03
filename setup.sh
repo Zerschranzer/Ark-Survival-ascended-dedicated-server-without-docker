@@ -9,6 +9,10 @@ PROTON_PREFIX="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
 ARK_EXECUTABLE="$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe"
 CONFIG_FILE="$BASE_DIR/server-files/ShooterGame/Saved/Config/WindowsServer/GameUserSettings.ini"
 
+# Download the server administration scripts
+wget -O "$BASE_DIR/start_stop.sh" "https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/start_stop.sh"
+wget -O "$BASE_DIR/restart_10_cron.sh" "https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/restart_10_cron.sh"
+
 # Create the steamcmd directory and navigate into it
 mkdir -p "$STEAMCMD_DIR"
 cd "$STEAMCMD_DIR"
