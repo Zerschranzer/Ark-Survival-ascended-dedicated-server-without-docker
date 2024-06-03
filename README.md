@@ -3,7 +3,7 @@
 Welcome to this straightforward guide designed to walk you through the process of installing and starting a ARK Survival Ascended Server on Linux. This guide is tailored for beginners, so no extensive prior knowledge is required.
 
 ## Additional Notes for Other Distributions
-If you're not using Ubuntu, the installation commands may differ. For example, Fedora or CentOS users would typically use `yum` or `dnf` instead of `apt-get`. It's crucial to consult your distribution's documentation for the equivalent packages or commands to ensure a smooth setup process.
+If you're not using Ubuntu, the installation commands for the System Preparation may differ. For example, Fedora or CentOS users would typically use `yum` or `dnf` instead of `apt-get`. You have to look for the equivalent packages or commands to ensure a smooth setup process.
 
 ## System Preparation
 
