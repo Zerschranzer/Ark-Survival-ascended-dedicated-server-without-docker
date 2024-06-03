@@ -94,7 +94,7 @@ A cron job is a scheduled task that runs automatically at specific times. Here's
 
 1. Open a terminal.
 2. Type `crontab -e` and press Enter. This opens the crontab file for editing.
-3. Add the following line (replace `/path/to/script/` with the actual path to your script, if you created a user asaserver, it should be /home/asaserver/restart_10_cron.sh):
+3. Add the following line (replace `/path/to/script/` with the actual path to your script, if you created a user asaserver, it should be `/home/asaserver/restart_10_cron.sh`):
 
     ```
     0 4 * * * /path/to/script/restart_10_cron.sh
