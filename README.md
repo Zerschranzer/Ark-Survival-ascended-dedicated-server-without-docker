@@ -76,6 +76,7 @@ To open these ports on your Linux server, you can use `iptables`, as Sudo user.`
 ```bash
 sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
+```
 
 ## Automatic Server Restart with `restart_10_cron.sh`
 
