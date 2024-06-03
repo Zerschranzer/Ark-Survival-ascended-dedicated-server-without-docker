@@ -11,7 +11,9 @@ CONFIG_FILE="$BASE_DIR/server-files/ShooterGame/Saved/Config/WindowsServer/GameU
 
 # Download the server administration scripts
 wget -O "$BASE_DIR/start_stop.sh" "https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/start_stop.sh"
+chmod +x start_stop.sh
 wget -O "$BASE_DIR/restart_10_cron.sh" "https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/restart_10_cron.sh"
+chmod +x restart_10_cron.sh
 
 # Create the steamcmd directory and navigate into it
 mkdir -p "$STEAMCMD_DIR"
