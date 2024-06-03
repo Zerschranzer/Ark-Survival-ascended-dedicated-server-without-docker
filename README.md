@@ -86,7 +86,7 @@ The `restart_10_cron.sh` script allows you to automatically restart your server.
 2. **Countdown**: During these 10 minutes, the script waits patiently.
 3. **Reminder**: After the 10 minutes have passed, it sends another message that the server will restart in **3 minutes**.
 4. **Backup**: Before the restart occurs, the script saves the current state of the server.
-5. **Shutdown**: Finally, the server is safely shut down.
+5. **Restart**: Finally, the server is safely restarting.
 
 ### Setting up as a Cron Job
 
