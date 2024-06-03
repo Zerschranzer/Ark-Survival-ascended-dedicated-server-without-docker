@@ -71,8 +71,34 @@ Congratulations! You have successfully installed and configured your server.
 
 ### How to open ports in Linux:
 
-To open these ports on your Linux server, you can use `iptables`, a powerful firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
+To open these ports on your Linux server, you can use `iptables`, as Sudo user.`iptables` is a firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
 
 ```bash
 sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
+
+## Automatic Server Restart with `restart_10_cron.sh`
+
+The `restart_10_cron.sh` script allows you to automatically restart your server. Here's what it does:
+
+1. **Warning**: The script sends a message in the server chat to inform all users that the server will restart in **10 minutes**.
+2. **Countdown**: During these 10 minutes, the script waits patiently.
+3. **Reminder**: After the 10 minutes have passed, it sends another message that the server will restart in **3 minutes**.
+4. **Backup**: Before the restart occurs, the script saves the current state of the server.
+5. **Shutdown**: Finally, the server is safely shut down.
+
+### Setting up as a Cron Job
+
+A cron job is a scheduled task that runs automatically at specific times. Here's how to set up the script as a daily cron job for **04:00 AM**:
+
+1. Open a terminal.
+2. Type `crontab -e` and press Enter. This opens the crontab file for editing.
+3. Add the following line (replace `/path/to/script/` with the actual path to your script):
+
+    ```
+    0 4 * * * /path/to/script/restart_10_cron.sh
+    ```
+
+4. Save the file and close the editor.
+
+Now your server will automatically restart every day at 04:00 AM!
