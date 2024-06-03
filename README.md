@@ -124,7 +124,7 @@ To play on the "Svartalfheim" map, which is a mod map, you need to specify the m
 The modified line should look like this:
 
 ```
-STARTPARAMS=“Svartalfheim_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mod=893657”
+STARTPARAMS="Svartalfheim_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods=893657"
 ```
 
 Save the changes and restart the server to load the new map with the desired settings.
