@@ -1,4 +1,4 @@
-# Server Installation and Startup Guide fur Ubuntu Server: A Beginner's Guide for Linux Users
+# Server Installation and Startup Guide for Ubuntu-Server: A Beginner's Guide for Linux Users
 
 Welcome to this straightforward guide designed to walk you through the process of installing and starting a ARK Survival Ascended Server on Linux. This guide is tailored for beginners, so no extensive prior knowledge is required.
 
