@@ -71,7 +71,7 @@ Congratulations! You have successfully installed and configured your server.
 
 ### How to open ports in Linux:
 
-To open these ports on your Linux server, you can use `iptables`, as Sudo user.`iptables` is a firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
+To open these ports on your Linux server, you can use `iptables`, as a Sudo user.`iptables` is a firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
 
 ```bash
 sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
