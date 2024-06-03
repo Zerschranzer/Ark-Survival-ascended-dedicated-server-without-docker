@@ -96,7 +96,7 @@ restart_and_update_server() {
 # Main menu
 if [ -z "$1" ]; then
     echo "ARK Server Management"
-    echo "1) Start server"
+    echo "1) Start server and update it"
     echo "2) Stop server"
     echo "3) Restart and update server"
     echo "4) Open RCON console (exit with CTRL+C)"
