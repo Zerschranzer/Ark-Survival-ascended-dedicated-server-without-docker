@@ -24,5 +24,5 @@ EOF
 
 sleep 60
 
-# Execute the stop_server function in the start_stop.sh script
+# Execute the start_stop.sh with option 3, restart
 "$BASE_DIR/start_stop.sh" 3
