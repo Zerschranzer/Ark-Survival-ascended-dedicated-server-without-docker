@@ -119,7 +119,7 @@ The `start_stop.sh` script contains start parameters for the ARK server, which d
 To play on the "Svartalfheim" map, which is a mod map, you need to specify the mod ID. Here's how:
 
 1. Change the map designation to `Svartalfheim_WP`.
-2. Add `-mod=893657` at the end of the parameters to load the mod.
+2. Add `-mods=893657` at the end of the parameters to load the mod.
 
 The modified line should look like this:
 
