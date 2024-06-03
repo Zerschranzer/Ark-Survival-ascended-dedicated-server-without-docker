@@ -83,8 +83,8 @@ sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
 The `restart_10_cron.sh` script allows you to automatically restart your server. Here's what it does:
 
 1. **Warning**: The script sends a message in the server chat to inform all users that the server will restart in **10 minutes**.
-2. **Countdown**: During these 10 minutes, the script waits patiently.
-3. **Reminder**: After the 10 minutes have passed, it sends another message that the server will restart in **3 minutes**.
+2. **Countdown**: During 7 minutes, the script waits patiently.
+3. **Reminder**: After 7 minutes have passed, it sends another message that the server will restart in **3 minutes**.
 4. **Backup**: Before the restart occurs, the script saves the current state of the server.
 5. **Restart**: Finally, the server is safely restarting.
 
