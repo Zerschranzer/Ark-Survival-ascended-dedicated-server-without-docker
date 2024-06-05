@@ -140,7 +140,7 @@ su asaserver
     ```
 
 5. Save the file and close the editor.
-
+(With vim texteditor press ESC :wq ENTER to save the file)
 
 
 ## Customizing Start Parameters in `asamanager.sh` Script
