@@ -9,7 +9,7 @@ Welcome to this straightforward guide designed to walk you through the process o
 
 Before we begin, ensure you are logged in as a user with `sudo` rights or as the `root` user. This will allow you to add support for the 32-bit architecture and install the necessary libraries.
 
-## Fedora Server and other distributions that use `dnf` as package manager 
+## If you use Fedora Server or other distributions that use `dnf` as package manager 
 
 To install the required dependencies on Fedora, execute the following commands:
 
@@ -19,7 +19,7 @@ sudo dnf install ncurses-devel.i686
 sudo dnf install libstdc++-devel.i686
 ```
 
-## Ubuntu Server and other distributions that use `apt` as package manager 
+## If you use Ubuntu Server or other distributions that use `apt` as package manager 
 For Ubuntu, you can install the dependencies as follows:
 
 ```bash
@@ -30,7 +30,7 @@ sudo apt install libncurses5:i386
 sudo apt install libstdc++6:i386
 ```
 
-## Debian Server
+## If you use Debian Server
 When working with Debian, which also uses `apt`, the steps differ slightly due to the absence of the `sudo` command installed by default.
 
 Switch to the root user:
@@ -49,7 +49,7 @@ apt install libncurses5:i386
 apt install libstdc++6:i386
 ```
 
-## OpenSUSE Server and other distributions that use `zypper` as package manager 
+## If you use OpenSUSE Server or other distributions that use `zypper` as package manager 
 For openSUSE, you can install the required dependencies with this command:
 
 ```bash
