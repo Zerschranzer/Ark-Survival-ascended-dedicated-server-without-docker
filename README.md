@@ -64,7 +64,7 @@ sudo zypper install compat-32bit libX11-6-32bit libX11-devel-32bit gcc-32bit lib
 For security reasons, it's advisable to create a new user without `sudo` permissions. In this example, we'll create a user named `asaserver` (as a debian user, dont use `sudo` before those commands) :
 
 ```bash
-sudo useradd asaserver
+sudo useradd -m asaserver
 sudo passwd asaserver
 ```
 
