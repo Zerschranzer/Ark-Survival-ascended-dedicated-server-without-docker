@@ -1,31 +1,71 @@
-# ARK Survival Ascended Server Installation and Startup Guide for Ubuntu-Server: A Beginner's Guide for Linux Users
+# ARK Survival Ascended Server Installation, Startup and Manager script for Linux-Server: A Beginner's Guide for Linux Users
+
 
 Welcome to this straightforward guide designed to walk you through the process of installing and starting a ARK Survival Ascended Server on Linux. This guide is tailored for beginners, so no extensive prior knowledge is required.
 
-## Additional Notes for Other Distributions
-If you're not using Ubuntu, the installation commands for the System Preparation may differ. For example, Fedora or CentOS users would typically use `yum` or `dnf` instead of `apt-get`. You have to look for the equivalent packages or commands to ensure a smooth setup process.
+
 
 ## System Preparation
 
-Before we begin, ensure you are logged in as a user with `sudo` rights or as the `root` user. This will allow you to install necessary packages and make configurations.
+Before we begin, ensure you are logged in as a user with `sudo` rights or as the `root` user. This will allow you to add support for the 32-bit architecture and install the necessary libraries.
 
-Execute the following commands to prepare your system:
+## Fedora Server and other distributions that use `dnf` as package manager 
+
+To install the required dependencies on Fedora, execute the following commands:
+
+```bash
+sudo dnf install glibc-devel.i686
+sudo dnf install ncurses-devel.i686
+sudo dnf install libstdc++-devel.i686
+```
+
+## Ubuntu Server and other distributions that use `apt` as package manager 
+For Ubuntu, you can install the dependencies as follows:
 
 ```bash
 sudo dpkg --add-architecture i386
-sudo apt-get update
-sudo apt-get install lib32stdc++6
-sudo apt-get install wget
+sudo apt update
+sudo apt install libc6:i386
+sudo apt install libncurses5:i386
+sudo apt install libstdc++6:i386
 ```
 
-These commands add support for the 32-bit architecture and install the necessary libraries along with the `wget` tool needed for downloading.
+## Debian Server
+When working with Debian, which also uses `apt`, the steps differ slightly due to the absence of the `sudo` command installed by default.
+
+Switch to the root user:
+
+```bash
+su -
+```
+
+Enter your root password. Then execute the following commands:
+
+```bash
+dpkg --add-architecture i386
+apt update
+apt install libc6:i386
+apt install libncurses5:i386
+apt install libstdc++6:i386
+```
+
+## OpenSUSE Server and other distributions that use `zypper` as package manager 
+For openSUSE, you can install the required dependencies with this command:
+
+```bash
+sudo zypper install compat-32bit libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit libXext6-32bit
+```
+
+
+
 
 ## Creating a New User
 
-For security reasons, it's advisable to create a new user without `sudo` permissions. In this example, we'll create a user named `asaserver`:
+For security reasons, it's advisable to create a new user without `sudo` permissions. In this example, we'll create a user named `asaserver` (as a debian user, dont use `sudo` before those commands) :
 
 ```bash
-sudo adduser asaserver
+sudo useradd asaserver
+sudo passwd asaserver
 ```
 
 Once the user is created, switch to this new user account:
@@ -36,10 +76,11 @@ su asaserver
 
 ## Downloading and Setting Up the Server
 
-As the `asaserver` user, now execute the following command to download the installation script and make it executable:
+As the `asaserver` user, or whatever username you have chosen, now execute the following command to download the installation script and make it executable:
 
 ```bash
-wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/setup.sh && chmod +x setup.sh
+cd
+wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/asamanager.sh && chmod +x asamanager.sh
 ```
 
 ## Running the Installation Script
@@ -47,70 +88,67 @@ wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-with
 Initiate the installation script with the command below:
 
 ```bash
-./setup.sh
-```
-
-The installation may take some time. At the end of the process, you will be prompted to set the server name, choose a password, and determine the Admin password (RCON).
-
-## Managing the Server
-
-After installation, you can manage the server with the `start_stop.sh` script. Execute it with the following command:
-
-```bash
-./start_stop.sh
+./asamanager.sh
 ```
 
 The script provides you with the following options:
 
-1. Start the server and update it (if necessary)
-2. Stop the server
-3. Restart the server and update it
-4. Log into the RCON console
+1) Start server
+2) Stop server
+3) Restart and update server
+4) Open RCON console (exit with CTRL+C)
+5) Download and Setup the Server
 
-Congratulations! You have successfully installed and configured your server.
+Select option number 5 to `Download and Setup the Server`. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server.
+
+Congratulations! You have successfully installed and configured your server. 
 
 ### How to open ports in Linux:
 
-To open these ports on your Linux server, you can use `iptables`, as a Sudo user.`iptables` is a firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
+To open these ports on your Linux server, you can use `iptables`, as a Sudo or root user.`iptables` is a firewall tool available by default on many Linux distributions. Here are the basic commands to open the ports:
 
 ```bash
 sudo iptables -A INPUT -p udp --dport 7777 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
 ```
 
-## Automatic Server Restart with `restart_10_cron.sh`
 
-The `restart_10_cron.sh` script allows you to automatically restart your server. Here's what it does:
+### Setting Up Automatic Server Restarts with Cron Jobs for Daily Server Software Updates
 
-1. **Warning**: The script sends a message in the server chat to inform all users that the server will restart in **10 minutes**.
-2. **Countdown**: During 7 minutes, the script waits patiently.
-3. **Reminder**: After 7 minutes have passed, it sends another message that the server will restart in **3 minutes**.
-4. **Backup**: Before the restart occurs, the script saves the current state of the server.
-5. **Restart**: Finally, the server is safely restarting.
+A cron job is a scheduled task that automatically runs at specific times. Here’s how to set up the script as a daily cron job with following functions:
 
-### Setting up as a Cron Job
+Every day at 3:40 AM, the script sends a message in the server chat that the server will restart in 20 minutes.
+Ten minutes later, at 3:50 AM, the script sends another message that the server will restart in 10 minutes.
+At 3:57 AM, a message is sent that the server will restart in 3 minutes.
+One minute later, at 3:58 AM, the script executes the saveworld command to save the current state of the world.
+Finally, at 4:00 AM, the server is restarted.
 
-A cron job is a scheduled task that runs automatically at specific times. Here's how to set up the script as a daily cron job for **04:00 AM**:
-
-1. Open a terminal.
-2. Type `crontab -e` and press Enter. This opens the crontab file for editing.
-3. Add the following line (replace `/path/to/script/` with the actual path to your script. If you created a user named asaserver, it should be `/home/asaserver/restart_10_cron.sh`):
+1. switch to the asaserver user or whatever username you have chosen with:
+```bash
+su asaserver
+```
+2. Type `crontab -e` and press Enter. This opens the crontab file for editing. If you get asked, wich editior you want to use, i recommend nano
+4. Add the following lines at the end of the file (replace `/home/asaserver/asamanager.sh` with the actual path to your script. If you created a user named asaserver, it should be `/home/asaserver/asamanager.sh`):
 
     ```
-    0 4 * * * /path/to/script/restart_10_cron.sh
+    40 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 20 minutes"
+    50 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 10 minutes"
+    57 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 3 minutes"
+    58 3 * * * /home/asaserver/asamanager.sh send_rcon "saveworld"
+    00 4 * * * /home/asaserver/asamanager.sh restart
     ```
 
-4. Save the file and close the editor.
+5. Save the file and close the editor.
 
-Now your server will automatically restart every day at 04:10 AM!
 
-## Customizing Start Parameters in `start_stop.sh` Script
 
-The `start_stop.sh` script contains start parameters for the ARK server, which dictate the map being played and how the server is configured. By default, the map is set to "TheIsland". To play on a different map, you need to change the start parameters.
+## Customizing Start Parameters in `asamanager.sh` Script
+
+The `asamanager.sh` script contains start parameters for the ARK server, which dictate the map being played and how the server is configured. By default, the map is set to "TheIsland". To play on a different map, you need to change the start parameters.
 
 ### Example: Switching to the "Scorched Earth" Map
 
-1. Open the `start_stop.sh` script in a text editor like nano.
+1. Open the `asamanager.sh` script in a text editor like nano.
 2. In the beginning, there is a line that starts with `STARTPARAMS=`.
 3. Replace `TheIsland_WP` with `ScorchedEarth_WP` to switch the map.
 
