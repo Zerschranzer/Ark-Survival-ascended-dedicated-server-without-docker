@@ -149,9 +149,15 @@ The `asamanager.sh` script contains start parameters for the ARK server, which d
 
 ### Example: Switching to the "Scorched Earth" Map
 
-1. Open the `asamanager.sh` script in a text editor like nano.
+1. Open the `asamanager.sh` script in a text editor like nano. `nano asamanager.sh`
 2. In the beginning, there is a line that starts with `STARTPARAMS=`.
 3. Replace `TheIsland_WP` with `ScorchedEarth_WP` to switch the map.
+
+The modified line should look like this:
+
+```
+STARTPARAMS="ScorchedEarth_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods=893657"
+```
 
 ### Example: Switching to the "Svartalfheim" Mod Map
 
