@@ -102,6 +102,7 @@ The script provides you with the following options:
 Select option number 5 to `Download and Setup the Server`. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server.
 
 Congratulations! You have successfully installed and configured your server. 
+To start, stop, restart or enter the Rcon_Console, just run `./asamanager.sh` in the console, and follow the instructions.
 
 ### How to open ports in Linux:
 
