@@ -53,7 +53,7 @@ apt install libstdc++6:i386
 For openSUSE, you can install the required dependencies with this command:
 
 ```bash
-sudo zypper install compat-32bit libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit libXext6-32bit
+sudo zypper install libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit libXext6-32bit
 ```
 
 
