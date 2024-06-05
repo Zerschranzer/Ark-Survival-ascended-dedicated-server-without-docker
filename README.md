@@ -7,7 +7,7 @@ Welcome to this straightforward guide designed to walk you through the process o
 
 ## System Preparation
 
-Before we begin, ensure you are logged in as a user with `sudo` rights or as the `root` user. This will allow you to add support for the 32-bit architecture and install the necessary libraries.
+Before we begin, ensure you are logged in as a user with `sudo` rights or as the `root` user. This will allow you to add support for the 32-bit architecture on x86_64 systems and install the necessary libraries.
 
 ## If you use Fedora Server or other distributions that use `dnf` as package manager 
 
