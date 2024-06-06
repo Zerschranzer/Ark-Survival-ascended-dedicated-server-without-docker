@@ -219,28 +219,50 @@ change_map() {
     load_startparams
     echo -e "\e[32mCurrent Map: ${STARTPARAMS%%\?*}\e[0m"
     echo
-    echo -e "\e[38;5;214mPlease enter the Name of the new Map. For example:
-
-    TheIsland_WP
-
-    ScorchedEarth_WP
-
-    TheCenter_WP
-
-    Svartalfheim_WP\e[0m \e[31m(MOD-Map)\e[0m"
+    echo -e "\e[38;5;214mChoose the map by pressing a number:"
+    echo -e "1) TheIsland_WP"
+    echo -e "2) ScorchedEarth_WP"
+    echo -e "3) TheCenter_WP"
+    echo -e "4) Svartalfheim_WP \e[31m(MOD-Map)\e[0m"
+    echo -e "5) Type in your own\e[0m"
     echo
-    echo -e "\e[31mFor Mod-Maps, don't forget to add the Mod-ID in the main menu (option 7)\e[0m"
-    echo
-    echo "Please enter the name of the new map (leave blank to cancel without making changes)"
-    read -r new_map_name
+    read -p "Please enter your choice (leave blank to cancel): " map_choice
+    case $map_choice in
+        1)
+            new_map_name="TheIsland_WP"
+            ;;
+        2)
+            new_map_name="ScorchedEarth_WP"
+            ;;
+        3)
+            new_map_name="TheCenter_WP"
+            ;;
+        4)
+            new_map_name="Svartalfheim_WP"
+            mod_id="962796" # Mod-ID for Svartalfheim_WP
+            ;;
+        5)
+            echo "Please enter the name of the new map:"
+            read -r new_map_name
+            ;;
+        *)
+            echo "No changes made."
+            return
+            ;;
+    esac
     if [ -z "$new_map_name" ]; then
         echo "No changes made."
         return
     fi
-    STARTPARAMS="${new_map_name}?${STARTPARAMS#*\?}"
+    if [ "$new_map_name" == "Svartalfheim_WP" ]; then
+        STARTPARAMS="${new_map_name}?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods=${mod_id}"
+    else
+        STARTPARAMS="${new_map_name}?${STARTPARAMS#*\?}"
+    fi
     echo "STARTPARAMS=\"$STARTPARAMS\"" > "$SCRIPT_CONFIG"
     echo -e "\e[32mThe map has been updated: $STARTPARAMS\e[0m"
 }
+
 
 # function to enter Mod-IDs
 change_mods() {
