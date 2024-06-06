@@ -61,9 +61,15 @@ sudo zypper install libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit 
 For security reasons, it's advisable to create a new user without `sudo` permissions. In this example, we'll create a user named `asaserver` (as a debian user, dont use `sudo` before those commands):
 
 ```bash
+sudo adduser asaserver
+sudo passwd asaserver
+```
+If the `adduser` command doesnt work, try:
+```bash
 sudo useradd -m asaserver
 sudo passwd asaserver
 ```
+But I recommend, trying `adduser` first.
 
 Once the user is created, switch to this new user account:
 
