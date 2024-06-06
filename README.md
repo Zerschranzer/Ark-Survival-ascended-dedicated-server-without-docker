@@ -117,7 +117,7 @@ sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
 ### Setting Up Automatic Server Restarts with Cron Jobs for Daily Server Software Updates
 
 A cron job is a scheduled task that automatically runs at specific times. Here’s how to set up the script as a daily cron job with following functions:
-
+#
 Every day at 3:40 AM, the script sends a message in the server chat that the server will restart in 20 minutes.
 
 Ten minutes later, at 3:50 AM, the script sends another message that the server will restart in 10 minutes.
