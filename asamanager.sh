@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Define startup parameters
-STARTPARAMS="TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50"
+# Path to the configuration file
+SCRIPT_CONFIG="script_config.cfg"
 
 # Define the base paths as variables
 BASE_DIR="/home/$(whoami)"
@@ -23,9 +23,22 @@ STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.ta
 PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton9-5/GE-Proton9-5.tar.gz"
 RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v0.10.3/rcon-0.10.3-amd64_linux.tar.gz"
 
+
+#Creates Config file, if it doesnt exist
+check_and_create_config() {
+    if [ ! -f $SCRIPT_CONFIG ]; then
+        echo "The configuration file does not exist. It is being created."
+        echo 'STARTPARAMS="TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods="' > $SCRIPT_CONFIG
+    else
+        echo "The configuration file exists."
+    fi
+}
+
+
 # Function to set up the server
 server_setup() {
-
+check_and_create_config
+load_startparams
 # Create necessary directories
 mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$RCON_CLI_DIR" "$PROTON_PREFIX"
 
@@ -57,13 +70,21 @@ cp -r "$PROTON_DIR/files/share/default_pfx" "$PROTON_PREFIX"
 sleep 3
 
 # Print a message in the console in red color
-echo -e "\e[31mScript now waits for 1 minutes for the server to start up and will then shut it down.\e[0m"
+echo -e "\e[32mScript now waits for 1 minutes for the server to start up and will then shut it down.\e[0m"
 
 # Wait for 30 Seconds to allow the server to start up, then shut it down
 sleep 60
 
 # Terminate the Ark Server process
 pkill -f ArkAscendedServer.exe
+
+# Update or add values
+update_or_add_value "SessionSettings" "SessionName"
+update_or_add_value "ServerSettings" "ServerPassword"
+update_or_add_value "ServerSettings" "ServerAdminPassword"
+change_map
+change_mods
+echo -e "\e[32mServer Setup Completed\e[0m"
 }
 
 # Function to update or add a value in the INI file
@@ -113,37 +134,32 @@ update_server() {
 # Function to check the server status
 check_server_status() {
     echo "Checking server status..."
-    for i in {1..60}; do # Wait up to 60 seconds
+    for i in {1..5}; do # Wait up to 5 seconds
         if pgrep -f ArkAscendedServer.exe > /dev/null; then
-            echo "The server is running."
+            echo -e "\e[32mThe server is running.\e[0m"
             return 0
         else
-            echo "Waiting for the server to start..."
+            echo "Try to Locate Server Process"
             sleep 1
         fi
     done
-    echo "The server could not be started."
+    echo -e "\e[31mThe Server is offline.\e[0m"
     return 1
 }
 
+
 # Function to start the server with the defined parameters
 start_server() {
-    export STEAM_COMPAT_DATA_PATH="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
-    export STEAM_COMPAT_CLIENT_INSTALL_PATH="$BASE_DIR/Steam"
-    # Update the server before starting
-    update_server
-
+    check_and_create_config
+    load_startparams
     echo "Starting server..."
     "$PROTON_DIR/proton" run "$ARK_EXECUTABLE" $STARTPARAMS > /dev/null 2>&1 &
     sleep 5 # Short pause to give the server time to start
 
-    # Check the server status
-    if check_server_status; then
-        echo "Server successfully started."
-    else
-        echo "Error: Server could not be started."
-    fi
+    # Checking the server status
+    check_server_status
 }
+
 
 # Function to stop the server
 stop_server() {
@@ -154,7 +170,7 @@ EOF
     echo "Server data saved. Stopping server..."
     sleep 10
     pkill -f ArkAscendedServer.exe
-    echo "Server stopped."
+    echo -e "\e[31mServer stopped.\e[0m"
 }
 
 # Function to download and start rcon_cli
@@ -178,28 +194,89 @@ start_rcon_cli() {
 # Function to restart and update the server
 restart_and_update_server() {
     stop_server
-    update_server
     start_server
 }
 
-# Testfunktion, um RCON-Befehl zu senden
+# function to send rcon commands
 send_rcon() {
    start_rcon_cli <<EOF
 $1
 EOF
 }
 
-# Hauptmenü
+# function to load startparameters from script_config.cfg
+load_startparams() {
+    if [[ -f "$SCRIPT_CONFIG" ]]; then
+        source "$SCRIPT_CONFIG"
+    else
+       echo -e "\e[31mConfig file not found\e[0m"
+        exit 1
+    fi
+}
+
+# function to change map
+change_map() {
+    load_startparams
+    echo -e "\e[32mCurrent Map: ${STARTPARAMS%%\?*}\e[0m"
+    echo
+    echo -e "\e[38;5;214mPlease enter the Name of the new Map. For example:
+
+    TheIsland_WP
+
+    ScorchedEarth_WP
+
+    TheCenter_WP
+
+    Svartalfheim_WP\e[0m \e[31m(MOD-Map)\e[0m"
+    echo
+    echo -e "\e[31mFor Mod-Maps, don't forget to add the Mod-ID in the main menu (option 7)\e[0m"
+    echo
+    echo "Please enter the name of the new map (leave blank to cancel without making changes)"
+    read -r new_map_name
+    if [ -z "$new_map_name" ]; then
+        echo "No changes made."
+        return
+    fi
+    STARTPARAMS="${new_map_name}?${STARTPARAMS#*\?}"
+    echo "STARTPARAMS=\"$STARTPARAMS\"" > "$SCRIPT_CONFIG"
+    echo -e "\e[32mThe map has been updated: $STARTPARAMS\e[0m"
+}
+
+# function to enter Mod-IDs
+change_mods() {
+    load_startparams
+    echo -e "\e[32mCurrent Mods: ${STARTPARAMS##*-mods=}\e[0m"
+    echo
+    echo "Please enter the new mod IDs, separated by commas. (type 'clear' to remove all mods, leave blank to cancel without making changes)"
+    read -r new_mod_ids
+    if [ -z "$new_mod_ids" ]; then
+        echo "No changes made."
+        return
+    elif [ "$new_mod_ids" == "clear" ]; then
+        new_mod_ids=""
+        echo -e "\e[31mAll Mod-IDs have been cleared.\e[0m"
+    fi
+    local params_before_mods="${STARTPARAMS%%-mods=*}"
+    STARTPARAMS="${params_before_mods}-mods=${new_mod_ids}"
+    echo "STARTPARAMS=\"$STARTPARAMS\"" > "$SCRIPT_CONFIG"
+    echo "Mod-IDs have been updated: $STARTPARAMS"
+}
+
+
+# Main menu
 if [ -z "$1" ]; then
-    echo "ARK Server Management"
-    echo "1) Start server"
-    echo "2) Stop server"
-    echo "3) Restart and update server"
-    echo "4) Open RCON console (exit with CTRL+C)"
-    echo "5) Download and Setup the Server"
-    echo "Please choose an option:"
+    echo -e "\e[38;5;214mARK Server Management\e[0m"
+    echo -e "\e[38;5;214m1) Start Server\e[0m"
+    echo -e "\e[38;5;214m2) Stop Server\e[0m"
+    echo -e "\e[38;5;214m3) Restart and Update Server\e[0m"
+    echo -e "\e[38;5;214m4) Open RCON Console (exit with CTRL+C)\e[0m"
+    echo -e "\e[38;5;214m5) Download and Setup the Server\e[0m"
+    echo -e "\e[38;5;214m6) Change Map\e[0m"
+    echo -e "\e[38;5;214m7) Change Mods\e[0m"
+    echo -e "\e[38;5;214m8) Check Server Status\e[0m"
+    echo -e "\e[38;5;214mPlease choose an option:\e[0m"
+
     read -r option
-    # Führen Sie die entsprechende Aktion basierend auf der gewählten Option aus
     case $option in
         1)
             start_server
@@ -215,14 +292,17 @@ if [ -z "$1" ]; then
             ;;
         5)
             server_setup
-            # Update or add values
-            update_or_add_value "SessionSettings" "SessionName"
-            update_or_add_value "ServerSettings" "ServerPassword"
-            update_or_add_value "ServerSettings" "ServerAdminPassword"
-            echo "Server setup completed"
+            ;;
+        6)
+            change_map
+            ;;
+        7)
+            change_mods
+            ;;
+        8)  check_server_status
             ;;
         *)
-            echo "Invalid option."
+            echo "Invalid option selected."
             ;;
     esac
 else
@@ -239,19 +319,28 @@ else
         console)
             start_rcon_cli
             ;;
+        status)
+            check_server_status
+            ;;
         setup)
-            # Update or add values
-            update_or_add_value "SessionSettings" "SessionName"
-            update_or_add_value "ServerSettings" "ServerPassword"
-            update_or_add_value "ServerSettings" "ServerAdminPassword"
-            echo "Server setup completed"
             server_setup
             ;;
         send_rcon)
             send_rcon "$2"
             ;;
+        help)
+            echo "Available command-line options:"
+            echo "  start       - Start the ARK server"
+            echo "  stop        - Stop the ARK server"
+            echo "  restart     - Restart and update the ARK server"
+            echo "  console     - Open RCON console"
+            echo "  status      - Shows the ARK server status"
+            echo "  setup       - Download and setup the server"
+            echo "  send_rcon   - Send a command to the ARK server via RCON"
+            echo "  help        - Display this help message"
+            ;;
         *)
-            echo "Invalid option."
+            echo "Invalid command-line option."
             exit 1
             ;;
     esac
