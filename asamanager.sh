@@ -1,6 +1,10 @@
 #!/bin/bash
 
-# Path to the configuration file
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+export LANGUAGE=C.UTF-8
+
+# Path to the asamanager configuration file
 SCRIPT_CONFIG="script_config.cfg"
 
 # Define the base paths as variables
@@ -29,8 +33,6 @@ check_and_create_config() {
     if [ ! -f $SCRIPT_CONFIG ]; then
         echo "The configuration file does not exist. It is being created."
         echo 'STARTPARAMS="TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods="' > $SCRIPT_CONFIG
-    else
-        echo "The configuration file exists."
     fi
 }
 
@@ -39,6 +41,8 @@ check_and_create_config() {
 server_setup() {
 check_and_create_config
 load_startparams
+change_map
+change_mods
 # Create necessary directories
 mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$RCON_CLI_DIR" "$PROTON_PREFIX"
 
@@ -57,8 +61,8 @@ wget -O "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz" "$RCONCLI_URL"
 tar -xzvf "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
 rm "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz"
 
-# Run steamcmd and install the game in the SERVER_FILES_DIR directory
-"$STEAMCMD_DIR/steamcmd.sh" +force_install_dir "$SERVER_FILES_DIR" +login anonymous +app_update 2430930 validate +quit
+# Running function to update or install ASA Server
+update_server
 
 # Copy the Proton prefix to the compatibility data directory
 cp -r "$PROTON_DIR/files/share/default_pfx" "$PROTON_PREFIX"
@@ -82,8 +86,6 @@ pkill -f ArkAscendedServer.exe
 update_or_add_value "SessionSettings" "SessionName"
 update_or_add_value "ServerSettings" "ServerPassword"
 update_or_add_value "ServerSettings" "ServerAdminPassword"
-change_map
-change_mods
 echo -e "\e[32mServer Setup Completed\e[0m"
 }
 
@@ -104,21 +106,27 @@ update_or_add_value() {
     if grep -q "^$key=" "$CONFIG_FILE"; then
         # Prompt for the new value and update it
         if [ "$key" == "SessionName" ]; then
-            read -p "Enter the name for your server: " value
+            echo -ne "\e[38;5;214mEnter the name for your server: \e[0m"
+            read value
         elif [ "$key" == "ServerPassword" ]; then
-            read -p "Enter your server password (leave blank if you don't want a password): " value
+            echo -ne "\e[38;5;214mEnter your server password (leave blank if you don't want a password): \e[0m"
+            read value
         elif [ "$key" == "ServerAdminPassword" ]; then
-            read -p "Enter an admin password (required for console access): " value
+            echo -ne "\e[38;5;214mEnter an admin password (required for console access): \e[0m"
+            read value
         fi
         sed -i "/$regex/,/^\[/{s/^$key=.*/$key=$value/}" "$CONFIG_FILE"
     else
         # Add the key and value
         if [ "$key" == "SessionName" ]; then
-            read -p "Enter the name for your server: " value
+            echo -ne "\e[38;5;214mEnter the name for your server: \e[0m"
+            read value
         elif [ "$key" == "ServerPassword" ]; then
-            read -p "Enter your server password (leave blank if you don't want a password): " value
+            echo -ne "\e[38;5;214mEnter your server password (leave blank if you don't want a password): \e[0m"
+            read value
         elif [ "$key" == "ServerAdminPassword" ]; then
-            read -p "Enter an admin password (required for console access): " value
+            echo -ne "\e[38;5;214mEnter an admin password (required for console access): \e[0m"
+            read value
         fi
         sed -i "/$regex/a $key=$value" "$CONFIG_FILE"
     fi
@@ -127,8 +135,11 @@ update_or_add_value() {
 # Function to update the server
 update_server() {
     echo "Updating server..."
-    "$STEAMCMD_DIR/steamcmd.sh" +force_install_dir "$SERVER_FILES_DIR" +login anonymous +app_update 2430930 validate +quit
-    echo "Server updated."
+    if "$STEAMCMD_DIR/steamcmd.sh" +force_install_dir "$SERVER_FILES_DIR" +login anonymous +app_update 2430930 validate +quit; then
+        echo -e "\e[32mServer Updated.\e[0m"
+    else
+        echo -e "\e[31mServer could not be updated.\e[0m"
+    fi
 }
 
 # Function to check the server status
@@ -150,16 +161,24 @@ check_server_status() {
 
 # Function to start the server with the defined parameters
 start_server() {
-    check_and_create_config
-    load_startparams
-    echo "Starting server..."
-    "$PROTON_DIR/proton" run "$ARK_EXECUTABLE" $STARTPARAMS > /dev/null 2>&1 &
-    sleep 5 # Short pause to give the server time to start
+    if pgrep -f ArkAscendedServer.exe > /dev/null; then
+        echo -e "\e[32mServer already running.\e[0m"
+    else
+        check_and_create_config
+        load_startparams
+        update_server
+        echo "Starting server..."
+        "$PROTON_DIR/proton" run "$ARK_EXECUTABLE" $STARTPARAMS > /dev/null 2>&1 &
+        sleep 5 # Short pause to give the server time to start
 
-    # Checking the server status
-    check_server_status
+        # Check if the server started successfully
+        if pgrep -f ArkAscendedServer.exe > /dev/null; then
+            echo -e "\e[32mServer started successfully.\e[0m"
+        else
+            echo -e "\e[31mError, server could not be started.\e[0m"
+        fi
+    fi
 }
-
 
 # Function to stop the server
 stop_server() {
@@ -216,17 +235,18 @@ load_startparams() {
 
 # function to change map
 change_map() {
+    check_and_create_config
     load_startparams
     echo -e "\e[32mCurrent Map: ${STARTPARAMS%%\?*}\e[0m"
-    echo
     echo -e "\e[38;5;214mChoose the map by pressing a number:"
+    echo
     echo -e "1) TheIsland_WP"
     echo -e "2) ScorchedEarth_WP"
     echo -e "3) TheCenter_WP"
     echo -e "4) Svartalfheim_WP \e[31m(MOD-Map)\e[0m"
-    echo -e "5) Type in your own\e[0m"
-    echo
-    read -p "Please enter your choice (leave blank to cancel): " map_choice
+    echo -e "\e[33m5) Type in your own\e[0m"
+    echo -ne "\e[38;5;214mPlease enter your choice (leave blank to cancel): \e[0m"
+    read -r map_choice
     case $map_choice in
         1)
             new_map_name="TheIsland_WP"
@@ -246,12 +266,12 @@ change_map() {
             read -r new_map_name
             ;;
         *)
-            echo "No changes made."
+            echo -e "\e[31mNo changes made.\e[0m"
             return
             ;;
     esac
     if [ -z "$new_map_name" ]; then
-        echo "No changes made."
+            echo -e "\e[31mNo changes made.\e[0m"
         return
     fi
     if [ "$new_map_name" == "Svartalfheim_WP" ]; then
@@ -266,13 +286,13 @@ change_map() {
 
 # function to enter Mod-IDs
 change_mods() {
+    check_and_create_config
     load_startparams
     echo -e "\e[32mCurrent Mods: ${STARTPARAMS##*-mods=}\e[0m"
-    echo
-    echo "Please enter the new mod IDs, separated by commas. (type 'clear' to remove all mods, leave blank to cancel without making changes)"
+    echo -e "\e[38;5;214mPlease enter the new mod IDs, separated by commas. (type 'clear' to remove all mods, leave blank to cancel without making changes)\e[0m"
     read -r new_mod_ids
     if [ -z "$new_mod_ids" ]; then
-        echo "No changes made."
+        echo -e "\e[31mNo changes made.\e[0m"
         return
     elif [ "$new_mod_ids" == "clear" ]; then
         new_mod_ids=""
@@ -281,14 +301,15 @@ change_mods() {
     local params_before_mods="${STARTPARAMS%%-mods=*}"
     STARTPARAMS="${params_before_mods}-mods=${new_mod_ids}"
     echo "STARTPARAMS=\"$STARTPARAMS\"" > "$SCRIPT_CONFIG"
-    echo "Mod-IDs have been updated: $STARTPARAMS"
+    echo -e "\e[32mMod-IDs have been updated: $STARTPARAMS\e[0m"
 }
 
 
 # Main menu
 if [ -z "$1" ]; then
     echo -e "\e[38;5;214mARK Server Management\e[0m"
-    echo -e "\e[38;5;214m1) Start Server\e[0m"
+    echo
+    echo -e "\e[38;5;214m1) Start and Update Server\e[0m"
     echo -e "\e[38;5;214m2) Stop Server\e[0m"
     echo -e "\e[38;5;214m3) Restart and Update Server\e[0m"
     echo -e "\e[38;5;214m4) Open RCON Console (exit with CTRL+C)\e[0m"
@@ -296,6 +317,7 @@ if [ -z "$1" ]; then
     echo -e "\e[38;5;214m6) Change Map\e[0m"
     echo -e "\e[38;5;214m7) Change Mods\e[0m"
     echo -e "\e[38;5;214m8) Check Server Status\e[0m"
+    echo -e "\e[38;5;214m9) Help\e[0m"
     echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
     read -r option
@@ -321,7 +343,20 @@ if [ -z "$1" ]; then
         7)
             change_mods
             ;;
-        8)  check_server_status
+        8)
+            check_server_status
+            ;;
+        9)
+            echo "Available command-line options:"
+            echo "  start       - Start the ARK server"
+            echo "  stop        - Stop the ARK server"
+            echo "  restart     - Restart and update the ARK server"
+            echo "  console     - Open RCON console"
+            echo "  status      - Shows the ARK server status"
+            echo "  setup       - Download and setup the server"
+            echo "  send_rcon   - Send a command to the ARK server via RCON"
+            echo "  help        - Display this help message"
+            echo "  for example: ./asamanager.sh restart   <---- this would restart the Server, without entering the main menu"
             ;;
         *)
             echo "Invalid option selected."
@@ -360,6 +395,7 @@ else
             echo "  setup       - Download and setup the server"
             echo "  send_rcon   - Send a command to the ARK server via RCON"
             echo "  help        - Display this help message"
+            echo "  for example: ./asamanager.sh restart   <---- this would restart the Server, without entering the main menu"
             ;;
         *)
             echo "Invalid command-line option."
