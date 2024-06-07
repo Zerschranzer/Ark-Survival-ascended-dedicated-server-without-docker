@@ -142,20 +142,15 @@ update_server() {
     fi
 }
 
-# Function to check the server status
 check_server_status() {
-    echo "Checking server status..."
-    for i in {1..5}; do # Wait up to 5 seconds
-        if pgrep -f ArkAscendedServer.exe > /dev/null; then
-            echo -e "\e[32mThe server is running.\e[0m"
-            return 0
-        else
-            echo "Try to Locate Server Process"
-            sleep 1
-        fi
-    done
-    echo -e "\e[31mThe Server is offline.\e[0m"
-    return 1
+    if pgrep -f ArkAscendedServer.exe > /dev/null; then
+        echo -e "\e[32mThe server is running.\e[0m"
+           start_rcon_cli <<EOF
+ListPlayers
+EOF
+    else
+        echo -e "\e[31mThe Server is offline.\e[0m"
+    fi
 }
 
 
@@ -182,6 +177,10 @@ start_server() {
 
 # Function to stop the server
 stop_server() {
+    if ! pgrep -f ArkAscendedServer.exe > /dev/null; then
+        echo -e "\e[31mServer already offline.\e[0m"
+        return
+    fi
     echo "Saving server data..."
     start_rcon_cli <<EOF
 saveworld
@@ -313,10 +312,10 @@ if [ -z "$1" ]; then
     echo -e "\e[38;5;214m2) Stop Server\e[0m"
     echo -e "\e[38;5;214m3) Restart and Update Server\e[0m"
     echo -e "\e[38;5;214m4) Open RCON Console (exit with CTRL+C)\e[0m"
-    echo -e "\e[38;5;214m5) Download and Setup the Server\e[0m"
-    echo -e "\e[38;5;214m6) Change Map\e[0m"
-    echo -e "\e[38;5;214m7) Change Mods\e[0m"
-    echo -e "\e[38;5;214m8) Check Server Status\e[0m"
+    echo -e "\e[38;5;214m5) Change Map\e[0m"
+    echo -e "\e[38;5;214m6) Change Mods\e[0m"
+    echo -e "\e[38;5;214m7) Check Server Status\e[0m"
+    echo -e "\e[34m8) Download and Setup the Server\e[0m"
     echo -e "\e[38;5;214m9) Help\e[0m"
     echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
@@ -335,16 +334,16 @@ if [ -z "$1" ]; then
             start_rcon_cli
             ;;
         5)
-            server_setup
-            ;;
-        6)
             change_map
             ;;
-        7)
+        6)
             change_mods
             ;;
-        8)
+        7)
             check_server_status
+            ;;
+        8)
+            server_setup
             ;;
         9)
             echo "Available command-line options:"
