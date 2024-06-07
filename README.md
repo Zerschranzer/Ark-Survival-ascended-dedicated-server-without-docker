@@ -100,12 +100,14 @@ The script provides you with the following options:
 2. Stop Server
 3. Restart and Update Server
 4. Open RCON Console (exit with CTRL+C)
-5. Download and Setup the Server
-6. Change Map
-7. Change Mods
-8. Check Server Status
+5. Change Map
+6. Change Mods
+7. Check Server Status
+8. Download and Setup the Server
+9. help
 
-Select option number 5 to `download and set up the server`. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server. Then it will ask you if you want to change the map or if you want to use mods. Just follow the instructions.
+
+Select option number 8 to `download and set up the server`. Beofre the setup starts,you get asked if you want to change the map or if you want to use mods. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server. Just follow the instructions.
 
 Congratulations! You have successfully installed and configured your server. To start, stop, restart or enter the Rcon_Console, just run `./asamanager.sh` in the console, and follow the instructions.
 
