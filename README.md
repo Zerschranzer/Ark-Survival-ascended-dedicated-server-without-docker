@@ -66,7 +66,7 @@ sudo passwd asaserver
 ```
 If the `adduser` command doesnt work, try:
 ```bash
-sudo useradd -m asaserver
+sudo useradd -m -U asaserver
 sudo passwd asaserver
 ```
 But I recommend, trying `adduser` first.
