@@ -46,25 +46,34 @@ check_for_updates() {
     GITHUB_SCRIPT_URL="https://raw.githubusercontent.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/main/asamanager.sh"
     
     # Laden Sie die neueste Version herunter und extrahieren Sie die Versionsnummer
-    LATEST_VERSION=$(curl -s $GITHUB_SCRIPT_URL | grep "SCRIPT_VERSION=" | cut -d'"' -f2)
+    LATEST_VERSION=$(curl -s $GITHUB_SCRIPT_URL | grep "^SCRIPT_VERSION=" | cut -d'"' -f2)
     
+    if [ -z "$LATEST_VERSION" ]; then
+        echo "Error: Unable to retrieve the latest version number."
+        return 1
+    fi
+
     if [ "$LATEST_VERSION" != "$SCRIPT_VERSION" ]; then
         echo "A new version ($LATEST_VERSION) is available. You are currently running version $SCRIPT_VERSION."
         read -p "Do you want to update? (y/n): " choice
         case "$choice" in 
             y|Y ) 
                 echo "Updating script..."
-                curl -o asamanager.sh $GITHUB_SCRIPT_URL
-                chmod +x asamanager.sh
-                echo "Update completed. Please restart the script."
-                exit 0
+                if curl -o asamanager.sh.tmp $GITHUB_SCRIPT_URL && mv asamanager.sh.tmp asamanager.sh; then
+                    chmod +x asamanager.sh
+                    echo "Update completed. Please restart the script."
+                    exit 0
+                else
+                    echo "Error: Update failed. Please try again or update manually."
+                    rm -f asamanager.sh.tmp
+                fi
                 ;;
             * ) 
                 echo "Update skipped."
                 ;;
         esac
     else
-        echo "You are running the latest version."
+        echo "You are running the latest version ($SCRIPT_VERSION)."
     fi
 }
 
