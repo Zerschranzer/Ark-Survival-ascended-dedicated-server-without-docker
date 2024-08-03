@@ -37,15 +37,13 @@ check_and_create_config() {
         echo 'STARTPARAMS="TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods="' > $SCRIPT_CONFIG
     fi
     
-}
-
 check_for_updates() {
     echo "Checking for updates..."
     
-    # URL zur raw-Version der neuesten asamanager.sh auf GitHub
+    # url to newest raw version
     GITHUB_SCRIPT_URL="https://raw.githubusercontent.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/main/asamanager.sh"
     
-    # Laden Sie die neueste Version herunter und extrahieren Sie die Versionsnummer
+    # download newest version
     LATEST_VERSION=$(curl -s $GITHUB_SCRIPT_URL | grep "^SCRIPT_VERSION=" | cut -d'"' -f2)
     
     if [ -z "$LATEST_VERSION" ]; then
