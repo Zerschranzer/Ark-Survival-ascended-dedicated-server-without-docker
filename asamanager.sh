@@ -8,7 +8,7 @@ export LANGUAGE=C.UTF-8
 SCRIPT_CONFIG="script_config.cfg"
 
 # Define the base paths as variables
-BASE_DIR="/home/$(whoami)"
+BASE_DIR="$(pwd)"
 STEAMCMD_DIR="$BASE_DIR/steamcmd"
 SERVER_FILES_DIR="$BASE_DIR/server-files"
 PROTON_DIR="$BASE_DIR/GE-Proton9-5"
