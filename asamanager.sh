@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.0.1"
 
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
