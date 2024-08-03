@@ -56,35 +56,25 @@ For openSUSE, you can install the required dependencies with this command:
 sudo zypper install libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit libXext6-32bit
 ```
 
-## Creating a New User
+### If you use Arch Linux or Arch-based distributions
 
-For security reasons, it's advisable to create a new user without `sudo` permissions. In this example, we'll create a user named `asaserver` (as a debian user, dont use `sudo` before those commands):
-
-```bash
-sudo adduser asaserver
-sudo passwd asaserver
-```
-If the `adduser` command doesnt work, try:
-```bash
-sudo useradd -m -U asaserver
-sudo passwd asaserver
-```
-But I recommend, trying `adduser` first.
-
-Once the user is created, switch to this new user account:
+For Arch Linux and its derivatives, you can install the required dependencies with this command:
 
 ```bash
-su asaserver
+sudo pacman -S lib32-libx11 gcc-multilib lib32-expat lib32-libxext
 ```
 
 ## Downloading and Setting Up the Server
 
-As the `asaserver` user, or whatever username you have chosen, now execute the following command to download the installation script and make it executable:
+Execute the following command to download the installation script and make it executable:
 
 ```bash
-cd
 wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/asamanager.sh && chmod +x asamanager.sh
 ```
+
+## Important Note About Server Installation Location
+
+The server will be installed in the directory from which you run the script. Make sure you have sufficient disk space in this location before running the installation.
 
 ## Running the Installation Script
 
@@ -106,8 +96,7 @@ The script provides you with the following options:
 8. Download and Setup the Server
 9. help
 
-
-Select option number 8 to `download and set up the server`. Beofre the setup starts,you get asked if you want to change the map or if you want to use mods. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server. Just follow the instructions.
+Select option number 8 to `download and set up the server`. Before the setup starts, you get asked if you want to change the map or if you want to use mods. Once the setup is complete, the script will prompt you to choose a name, password, and RCON password for your server. Just follow the instructions.
 
 Congratulations! You have successfully installed and configured your server. To start, stop, restart or enter the Rcon_Console, just run `./asamanager.sh` in the console, and follow the instructions.
 
@@ -142,7 +131,7 @@ sudo iptables -A INPUT -p tcp --dport 27020 -j ACCEPT
 
 ### Setting Up Automatic Server Restarts with Cron Jobs for Daily Server Software Updates
 
-A cron job is a scheduled task that automatically runs at specific times. Here’s how to set up the script as a daily cron job with following functions:
+A cron job is a scheduled task that automatically runs at specific times. Here's how to set up the script as a daily cron job with following functions:
 
 Every day at 3:40 AM, the script sends a message in the server chat that the server will restart in 20 minutes.
 
@@ -154,26 +143,20 @@ One minute later, at 3:58 AM, the script executes the saveworld command to save 
 
 Finally, at 4:00 AM, the server is restarted.
 
-1. Switch to the asaserver user or whatever username you have chosen with:
-
-```bash
-su asaserver
-```
-
-2. Type `crontab -e` and press Enter. This opens the crontab file for editing. If you get asked, which editor you want to use, I recommend nano.
-3. Add the following lines at the end of the file (replace `/home/asaserver/asamanager.sh` with the actual path to your script. If you created a user named asaserver, it should be `/home/asaserver/asamanager.sh`):
+1. Type `crontab -e` and press Enter. This opens the crontab file for editing. If you get asked, which editor you want to use, I recommend nano.
+2. Add the following lines at the end of the file (replace `/path/to/asamanager.sh` with the actual path to your script):
 
 ```
-40 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 20 minutes"
-50 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 10 minutes"
-57 3 * * * /home/asaserver/asamanager.sh send_rcon "serverchat Server restart in 3 minutes"
-58 3 * * * /home/asaserver/asamanager.sh send_rcon "saveworld"
-00 4 * * * /home/asaserver/asamanager.sh restart
+40 3 * * * /path/to/asamanager.sh send_rcon "serverchat Server restart in 20 minutes"
+50 3 * * * /path/to/asamanager.sh send_rcon "serverchat Server restart in 10 minutes"
+57 3 * * * /path/to/asamanager.sh send_rcon "serverchat Server restart in 3 minutes"
+58 3 * * * /path/to/asamanager.sh send_rcon "saveworld"
+00 4 * * * /path/to/asamanager.sh restart
 ```
 
-4. Save the file and close the editor.
+3. Save the file and close the editor.
 (With vim texteditor press ESC :wq ENTER to save the file)
 
 ## Customizing Start Parameters in `asamanager.sh` Script
 
-If you wish to modify the startup parameters of your ASA Server, you can locate them in the `script_config.cfg` configuration file within your home directory. However, if you’re looking to add mods or change the map, I recommend using my script, which will automatically adjust the `script_config.cfg` file for you. You should only manually change the startup parameters if you need to alter the port or other settings.
+If you wish to modify the startup parameters of your ASA Server, you can locate them in the `script_config.cfg` configuration file within the directory where you ran the script. However, if you're looking to add mods or change the map, I recommend using my script, which will automatically adjust the `script_config.cfg` file for you. You should only manually change the startup parameters if you need to alter the port or other settings.
