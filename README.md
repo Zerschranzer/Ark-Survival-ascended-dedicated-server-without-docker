@@ -64,6 +64,31 @@ For Arch Linux and its derivatives, you can install the required dependencies wi
 sudo pacman -S lib32-libx11 gcc-multilib lib32-expat lib32-libxext
 ```
 
+
+## Optional but Recommended: Creating a Separate User
+
+For security reasons, it's recommended to create a separate user without sudo permissions to run the ARK server. This step is optional but highly advised for better system security.
+
+To create a new user (e.g., named 'asaserver'):
+
+```bash
+sudo adduser asaserver
+sudo passwd asaserver
+```
+
+If the `adduser` command doesn't work, try:
+
+```bash
+sudo useradd -m -U asaserver
+sudo passwd asaserver
+```
+
+After creating the user, switch to this new account:
+
+```bash
+su - asaserver
+```
+
 ## Downloading and Setting Up the Server
 
 Execute the following command to download the installation script and make it executable:
@@ -74,7 +99,8 @@ wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-with
 
 ## Important Note About Server Installation Location
 
-The server will be installed in the directory from which you run the script. Make sure you have sufficient disk space in this location before running the installation.
+The server will be installed in the directory from which you run the script. Make sure you have sufficient disk space in this location before running the installation. If you're using a separate user as recommended, this will typically be in that user's home directory.
+
 
 ## Running the Installation Script
 
