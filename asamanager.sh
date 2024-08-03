@@ -1,7 +1,5 @@
 #!/bin/bash
 
-SCRIPT_VERSION="1.0.1"
-
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 export LANGUAGE=C.UTF-8
@@ -36,44 +34,8 @@ check_and_create_config() {
         echo "The configuration file does not exist. It is being created."
         echo 'STARTPARAMS="TheIsland_WP?listen?Port=7777?RCONPort=27020?RCONEnabled=True -WinLiveMaxPlayers=50 -mods="' > $SCRIPT_CONFIG
     fi
-    
-check_for_updates() {
-    echo "Checking for updates..."
-    
-    # url to newest raw version
-    GITHUB_SCRIPT_URL="https://raw.githubusercontent.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/main/asamanager.sh"
-    
-    # download newest version
-    LATEST_VERSION=$(curl -s $GITHUB_SCRIPT_URL | grep "^SCRIPT_VERSION=" | cut -d'"' -f2)
-    
-    if [ -z "$LATEST_VERSION" ]; then
-        echo "Error: Unable to retrieve the latest version number."
-        return 1
-    fi
-
-    if [ "$LATEST_VERSION" != "$SCRIPT_VERSION" ]; then
-        echo "A new version ($LATEST_VERSION) is available. You are currently running version $SCRIPT_VERSION."
-        read -p "Do you want to update? (y/n): " choice
-        case "$choice" in 
-            y|Y ) 
-                echo "Updating script..."
-                if curl -o asamanager.sh.tmp $GITHUB_SCRIPT_URL && mv asamanager.sh.tmp asamanager.sh; then
-                    chmod +x asamanager.sh
-                    echo "Update completed. Please restart the script."
-                    exit 0
-                else
-                    echo "Error: Update failed. Please try again or update manually."
-                    rm -f asamanager.sh.tmp
-                fi
-                ;;
-            * ) 
-                echo "Update skipped."
-                ;;
-        esac
-    else
-        echo "You are running the latest version ($SCRIPT_VERSION)."
-    fi
 }
+
 
 # Function to set up the server
 server_setup() {
@@ -355,7 +317,6 @@ if [ -z "$1" ]; then
     echo -e "\e[38;5;214m7) Check Server Status\e[0m"
     echo -e "\e[34m8) Download and Setup the Server\e[0m"
     echo -e "\e[38;5;214m9) Help\e[0m"
-    echo -e "\e[38;5;214m10) Check for script updates\e[0m"
     echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
     read -r option
@@ -395,9 +356,6 @@ if [ -z "$1" ]; then
             echo "  send_rcon   - Send a command to the ARK server via RCON"
             echo "  help        - Display this help message"
             echo "  for example: ./asamanager.sh restart   <---- this would restart the Server, without entering the main menu"
-            ;;
-         10)
-            check_for_updates
             ;;
         *)
             echo "Invalid option selected."
