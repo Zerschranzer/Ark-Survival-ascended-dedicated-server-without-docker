@@ -341,10 +341,11 @@ send_rcon_command() {
 # Main script execution
 if [ $# -eq 0 ]; then
     main_menu
+elif [ "$1" = "update" ]; then
+    install_base_server
 else
     instance_name=$1
     action=$2
-
     case $action in
         start)
             start_server "$instance_name"
@@ -356,9 +357,6 @@ else
             stop_server "$instance_name"
             start_server "$instance_name"
             ;;
-        update)
-            install_base_server
-            ;;
         send_rcon)
             if [ $# -lt 3 ]; then
                 echo "Usage: $0 <instance_name> send_rcon \"<rcon_command>\""
@@ -368,7 +366,8 @@ else
             send_rcon_command "$instance_name" "$rcon_command"
             ;;
         *)
-            echo "Usage: $0 <instance_name> [start|stop|update|restart|send_rcon \"<rcon_command>\"]"
+            echo "Usage: $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\"]"
+            echo "       $0 update"
             echo "Or run without arguments to enter interactive mode."
             exit 1
             ;;
