@@ -328,5 +328,49 @@ manage_instance() {
     done
 }
 
-# Start the main menu
-main_menu
+# Function to send RCON command
+send_rcon_command() {
+    local instance=$1
+    local command=$2
+    load_instance_config "$instance" || return 1
+
+    echo "Sending RCON command to instance: $instance"
+    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
+}
+
+# Main script execution
+if [ $# -eq 0 ]; then
+    main_menu
+else
+    instance_name=$1
+    action=$2
+
+    case $action in
+        start)
+            start_server "$instance_name"
+            ;;
+        stop)
+            stop_server "$instance_name"
+            ;;
+        restart)
+            stop_server "$instance_name"
+            start_server "$instance_name"
+            ;;
+        update)
+            install_base_server
+            ;;
+        send_rcon)
+            if [ $# -lt 3 ]; then
+                echo "Usage: $0 <instance_name> send_rcon \"<rcon_command>\""
+                exit 1
+            fi
+            rcon_command="${@:3}"  # Get all arguments from the third onwards
+            send_rcon_command "$instance_name" "$rcon_command"
+            ;;
+        *)
+            echo "Usage: $0 <instance_name> [start|stop|update|restart|send_rcon \"<rcon_command>\"]"
+            echo "Or run without arguments to enter interactive mode."
+            exit 1
+            ;;
+    esac
+fi
