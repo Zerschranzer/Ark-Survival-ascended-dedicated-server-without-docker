@@ -272,6 +272,56 @@ send_rcon_command() {
     "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
 }
 
+# Function to show running instances
+show_running_instances() {
+    echo "Checking running instances..."
+    local running_count=0
+    for instance in "$INSTANCES_DIR"/*; do
+        if [ -d "$instance" ]; then
+            instance_name=$(basename "$instance")
+            if pgrep -f "ArkAscendedServer.exe.*$instance_name" > /dev/null; then
+                echo -e "\e[32m$instance_name is running\e[0m"
+                ((running_count++))
+            fi
+        fi
+    done
+    if [ $running_count -eq 0 ]; then
+        echo "No instances are currently running."
+    else
+        echo "Total running instances: $running_count"
+    fi
+}
+
+# Function to delete an instance
+delete_instance() {
+    local instance=$1
+    if [ -z "$instance" ]; then
+        echo "Please select an instance to delete:"
+        select_instance
+        instance=$selected_instance
+    fi
+
+    if [ -d "$INSTANCES_DIR/$instance" ]; then
+        echo -e "\e[31mWarning: This will permanently delete the instance '$instance' and all its data.\e[0m"
+        read -p "Are you sure you want to proceed? (y/N): " confirm
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            # Stop the instance if it's running
+            if pgrep -f "ArkAscendedServer.exe.*$instance" > /dev/null; then
+                echo "Stopping instance '$instance'..."
+                stop_server "$instance"
+            fi
+
+            # Delete the instance directory
+            rm -rf "$INSTANCES_DIR/$instance"
+            echo -e "\e[32mInstance '$instance' has been deleted.\e[0m"
+        else
+            echo "Deletion cancelled."
+        fi
+    else
+        echo "Instance '$instance' does not exist."
+    fi
+}
+
 # Main menu
 main_menu() {
     while true; do
@@ -283,7 +333,9 @@ main_menu() {
         echo -e "\e[38;5;214m4) Manage Instance\e[0m"
         echo -e "\e[38;5;214m5) Start All Instances\e[0m"
         echo -e "\e[38;5;214m6) Stop All Instances\e[0m"
-        echo -e "\e[38;5;214m7) Exit\e[0m"
+        echo -e "\e[38;5;214m7) Show Running Instances\e[0m"
+        echo -e "\e[38;5;214m8) Delete Instance\e[0m"
+        echo -e "\e[38;5;214m9) Exit\e[0m"
         echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
         read -r option
@@ -309,6 +361,12 @@ main_menu() {
                 stop_all_instances
                 ;;
             7)
+                show_running_instances
+                ;;
+            8)
+                delete_instance
+                ;;
+            9)
                 echo "Exiting ARK Server Manager. Goodbye!"
                 exit 0
                 ;;
@@ -387,6 +445,16 @@ else
         stop_all)
             stop_all_instances
             ;;
+        show_running)
+            show_running_instances
+            ;;
+        delete)
+            if [ -z "$2" ]; then
+                echo "Usage: $0 delete <instance_name>"
+                exit 1
+            fi
+            delete_instance "$2"
+            ;;
         *)
             instance_name=$1
             action=$2
@@ -410,7 +478,7 @@ else
                     send_rcon_command "$instance_name" "$rcon_command"
                     ;;
                 *)
-                    echo "Usage: $0 [update|start_all|stop_all]"
+                    echo "Usage: $0 [update|start_all|stop_all|show_running|delete <instance_name>]"
                     echo "       $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\"]"
                     echo "Or run without arguments to enter interactive mode."
                     exit 1
