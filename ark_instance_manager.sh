@@ -236,6 +236,42 @@ check_server_status() {
     fi
 }
 
+# Function to start all instances
+start_all_instances() {
+    echo "Starting all server instances..."
+    for instance in "$INSTANCES_DIR"/*; do
+        if [ -d "$instance" ]; then
+            instance_name=$(basename "$instance")
+            echo "Starting instance: $instance_name"
+            start_server "$instance_name"
+        fi
+    done
+    echo "All instances have been started."
+}
+
+# Function to stop all instances
+stop_all_instances() {
+    echo "Stopping all server instances..."
+    for instance in "$INSTANCES_DIR"/*; do
+        if [ -d "$instance" ]; then
+            instance_name=$(basename "$instance")
+            echo "Stopping instance: $instance_name"
+            stop_server "$instance_name"
+        fi
+    done
+    echo "All instances have been stopped."
+}
+
+# Function to send RCON command
+send_rcon_command() {
+    local instance=$1
+    local command=$2
+    load_instance_config "$instance" || return 1
+
+    echo "Sending RCON command to instance: $instance"
+    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
+}
+
 # Main menu
 main_menu() {
     while true; do
@@ -245,7 +281,9 @@ main_menu() {
         echo -e "\e[38;5;214m2) List Instances\e[0m"
         echo -e "\e[38;5;214m3) Create New Instance\e[0m"
         echo -e "\e[38;5;214m4) Manage Instance\e[0m"
-        echo -e "\e[38;5;214m5) Exit\e[0m"
+        echo -e "\e[38;5;214m5) Start All Instances\e[0m"
+        echo -e "\e[38;5;214m6) Stop All Instances\e[0m"
+        echo -e "\e[38;5;214m7) Exit\e[0m"
         echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
         read -r option
@@ -265,6 +303,13 @@ main_menu() {
                 fi
                 ;;
             5)
+                start_all_instances
+                ;;
+            6)
+                stop_all_instances
+                ;;
+            7)
+                echo "Exiting ARK Server Manager. Goodbye!"
                 exit 0
                 ;;
             *)
@@ -328,16 +373,6 @@ manage_instance() {
     done
 }
 
-# Function to send RCON command
-send_rcon_command() {
-    local instance=$1
-    local command=$2
-    load_instance_config "$instance" || return 1
-
-    echo "Sending RCON command to instance: $instance"
-    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
-}
-
 # Main script execution
 if [ $# -eq 0 ]; then
     main_menu
@@ -384,4 +419,3 @@ else
             ;;
     esac
 fi
-
