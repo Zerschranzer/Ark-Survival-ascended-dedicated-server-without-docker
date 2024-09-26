@@ -352,12 +352,14 @@ show_running_instances() {
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
-            if [ -f "$INSTANCES_DIR/$instance_name/server.pid" ]; then
-                pid=$(cat "$INSTANCES_DIR/$instance_name/server.pid")
-                if ps -p "$pid" > /dev/null; then
-                    echo -e "\e[32m$instance_name is running (PID $pid)\e[0m"
-                    ((running_count++))
-                fi
+            # Laden der Instanzkonfiguration
+            load_instance_config "$instance_name" || continue
+            # Prüfen, ob der Server läuft
+            if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
+                echo -e "\e[32m$instance_name is running\e[0m"
+                ((running_count++))
+            else
+                echo -e "\e[31m$instance_name is not running\e[0m"
             fi
         fi
     done
@@ -381,19 +383,27 @@ delete_instance() {
         echo -e "\e[31mWarning: This will permanently delete the instance '$instance' and all its data.\e[0m"
         read -p "Are you sure you want to proceed? (y/N): " confirm
         if [[ $confirm =~ ^[Yy]$ ]]; then
-            # Stop the instance if it's running
-            if [ -f "$INSTANCES_DIR/$instance/server.pid" ]; then
+            # Load instance config
+            load_instance_config "$instance"
+
+            # Stop instance, if its running
+            if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
                 echo "Stopping instance '$instance'..."
                 stop_server "$instance"
             fi
 
-            # Remove symlink and restore original Config directory if necessary
-            rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
-            if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" ]; then
-                mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+            # Check, if other instances are running
+            if pgrep -f "ArkAscendedServer.exe" > /dev/null; then
+                echo "Other instances are still running. Not removing the Config symlink to avoid affecting other servers."
+            else
+                # Removing the symlink and restoring the original configuration directory:
+                rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+                if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" ]; then
+                    mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+                fi
             fi
 
-            # Delete the instance directory
+            # Deleting the instance directory
             rm -rf "$INSTANCES_DIR/$instance"
             echo -e "\e[32mInstance '$instance' has been deleted.\e[0m"
         else
