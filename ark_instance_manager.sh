@@ -317,6 +317,10 @@ start_all_instances() {
             instance_name=$(basename "$instance")
             echo "Starting instance: $instance_name"
             start_server "$instance_name"
+
+            # Waiting 30 seconds before starting the next instance
+            echo "Waiting 30 seconds before starting the next instance..."
+            sleep 30
         fi
     done
     echo "All instances have been started."
