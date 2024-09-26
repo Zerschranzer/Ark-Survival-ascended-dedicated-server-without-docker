@@ -5,20 +5,21 @@ export LANG=C.UTF-8
 export LANGUAGE=C.UTF-8
 
 # Base directory for all instances
-BASE_DIR="$(pwd)"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTANCES_DIR="$BASE_DIR/instances"
 
 # Define the base paths as variables
 STEAMCMD_DIR="$BASE_DIR/steamcmd"
 SERVER_FILES_DIR="$BASE_DIR/server-files"
-PROTON_DIR="$BASE_DIR/GE-Proton9-5"
-RCON_CLI_DIR="$BASE_DIR/rcon-0.10.3-amd64_linux"
-
+PROTON_VERSION="GE-Proton9-5"
+PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
+RCONCLI_VERSION="0.10.3"
+RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
 
 # Define URLS for Steamcmd, Proton, and rconcli
 STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
-PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/GE-Proton9-5/GE-Proton9-5.tar.gz"
-RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v0.10.3/rcon-0.10.3-amd64_linux.tar.gz"
+PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
+RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
 
 # Function to install base server
 install_base_server() {
@@ -40,9 +41,9 @@ install_base_server() {
     # Download and unpack Proton
     if [ ! -d "$PROTON_DIR/files" ]; then
         echo "Downloading Proton..."
-        wget -O "$PROTON_DIR/GE-Proton9-5.tar.gz" "$PROTON_URL"
-        tar -xzvf "$PROTON_DIR/GE-Proton9-5.tar.gz" -C "$PROTON_DIR" --strip-components=1
-        rm "$PROTON_DIR/GE-Proton9-5.tar.gz"
+        wget -O "$PROTON_DIR/$PROTON_VERSION.tar.gz" "$PROTON_URL"
+        tar -xzvf "$PROTON_DIR/$PROTON_VERSION.tar.gz" -C "$PROTON_DIR" --strip-components=1
+        rm "$PROTON_DIR/$PROTON_VERSION.tar.gz"
     else
         echo "Proton already installed."
     fi
@@ -50,9 +51,9 @@ install_base_server() {
     # Download and unpack rcon-cli
     if [ ! -f "$RCON_CLI_DIR/rcon" ]; then
         echo "Downloading rcon-cli..."
-        wget -O "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz" "$RCONCLI_URL"
-        tar -xzvf "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
-        rm "$RCON_CLI_DIR/rcon-0.10.3-amd64_linux.tar.gz"
+        wget -O "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" "$RCONCLI_URL"
+        tar -xzvf "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
+        rm "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
     else
         echo "rcon-cli already installed."
     fi
@@ -64,6 +65,7 @@ install_base_server() {
     echo -e "\e[32mBase server installation completed.\e[0m"
 }
 
+# Function to initialize Proton prefix
 initialize_proton_prefix() {
     local instance=$1
     local proton_prefix="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
@@ -103,6 +105,8 @@ edit_instance_config() {
         echo "QueryPort=27015" >> "$config_file"
         echo "Port=7777" >> "$config_file"
         echo "ModIDs=" >> "$config_file"
+        echo "SaveDir=$instance" >> "$config_file"
+        echo "ClusterID=" >> "$config_file"
     fi
 
     # Open the config file in the default text editor
@@ -122,15 +126,17 @@ load_instance_config() {
 
     if [ -f "$config_file" ]; then
         # Read configuration into variables
-        SERVER_NAME=$(grep "ServerName=" "$config_file" | cut -d= -f2)
-        SERVER_PASSWORD=$(grep "ServerPassword=" "$config_file" | cut -d= -f2)
-        ADMIN_PASSWORD=$(grep "ServerAdminPassword=" "$config_file" | cut -d= -f2)
-        MAX_PLAYERS=$(grep "MaxPlayers=" "$config_file" | cut -d= -f2)
-        MAP_NAME=$(grep "MapName=" "$config_file" | cut -d= -f2)
-        RCON_PORT=$(grep "RCONPort=" "$config_file" | cut -d= -f2)
-        QUERY_PORT=$(grep "QueryPort=" "$config_file" | cut -d= -f2)
-        GAME_PORT=$(grep "Port=" "$config_file" | cut -d= -f2)
-        MOD_IDS=$(grep "ModIDs=" "$config_file" | cut -d= -f2)
+        SERVER_NAME=$(grep "ServerName=" "$config_file" | cut -d= -f2-)
+        SERVER_PASSWORD=$(grep "ServerPassword=" "$config_file" | cut -d= -f2-)
+        ADMIN_PASSWORD=$(grep "ServerAdminPassword=" "$config_file" | cut -d= -f2-)
+        MAX_PLAYERS=$(grep "MaxPlayers=" "$config_file" | cut -d= -f2-)
+        MAP_NAME=$(grep "MapName=" "$config_file" | cut -d= -f2-)
+        RCON_PORT=$(grep "RCONPort=" "$config_file" | cut -d= -f2-)
+        QUERY_PORT=$(grep "QueryPort=" "$config_file" | cut -d= -f2-)
+        GAME_PORT=$(grep "Port=" "$config_file" | cut -d= -f2-)
+        MOD_IDS=$(grep "ModIDs=" "$config_file" | cut -d= -f2-)
+        SAVE_DIR=$(grep "SaveDir=" "$config_file" | cut -d= -f2-)
+        CLUSTER_ID=$(grep "ClusterID=" "$config_file" | cut -d= -f2-)
     else
         echo "Configuration file for instance $instance not found."
         return 1
@@ -174,11 +180,46 @@ start_server() {
     export STEAM_COMPAT_DATA_PATH="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
     export STEAM_COMPAT_CLIENT_INSTALL_PATH="$BASE_DIR"
 
+    # Ensure per-instance Config directory exists
+    local instance_config_dir="$INSTANCES_DIR/$instance/Config"
+    if [ ! -d "$instance_config_dir" ]; then
+        mkdir -p "$instance_config_dir"
+        cp -r "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/." "$instance_config_dir/"
+    fi
+
+    # Backup the original Config directory if not already backed up
+    if [ ! -L "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" ] && [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" ]; then
+        mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak"
+    fi
+
+    # Link the instance Config directory
+    rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+    ln -s "$instance_config_dir" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+
+    # Ensure per-instance save directory exists
+    local save_dir="$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$SAVE_DIR"
+    mkdir -p "$save_dir"
+
+    # Set cluster parameters if ClusterID is set
+    local cluster_params=""
+    if [ -n "$CLUSTER_ID" ]; then
+        local cluster_dir="$BASE_DIR/clusters/$CLUSTER_ID"
+        mkdir -p "$cluster_dir"
+        cluster_params="-ClusterDirOverride=\"$cluster_dir\" -ClusterId=\"$CLUSTER_ID\""
+    fi
+
     # Use the loaded configuration variables here
     "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
-        "$MAP_NAME?listen?SessionName=$SERVER_NAME?MaxPlayers=$MAX_PLAYERS?ServerPassword=$SERVER_PASSWORD?ServerAdminPassword=$ADMIN_PASSWORD?QueryPort=$QUERY_PORT?Port=$GAME_PORT?RCONEnabled=True?RCONPort=$RCON_PORT" \
+        "$MAP_NAME?listen?SessionName=$SERVER_NAME?MaxPlayers=$MAX_PLAYERS?ServerPassword=$SERVER_PASSWORD?ServerAdminPassword=$ADMIN_PASSWORD?QueryPort=$QUERY_PORT?Port=$GAME_PORT?RCONEnabled=True?RCONPort=$RCON_PORT?AltSaveDirectoryName=$SAVE_DIR" \
         -NoBattlEye \
         -crossplay \
+        -NoHangDetection \
+        -useallavailablecores \
+        -nosteamclient \
+        -game \
+        $cluster_params \
+        -server \
+        -log \
         -mods="$MOD_IDS" \
         > "$INSTANCES_DIR/$instance/server.log" 2>&1 &
 
@@ -188,8 +229,9 @@ start_server() {
 # Function to stop the server
 stop_server() {
     local instance=$1
+    load_instance_config "$instance" || return 1
     echo "Stopping server for instance: $instance"
-    pkill -f "ArkAscendedServer.exe.*$instance"
+    pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR"
     echo "Server stopped for instance: $instance"
 }
 
@@ -229,7 +271,8 @@ change_mods() {
 # Function to check server status
 check_server_status() {
     local instance=$1
-    if pgrep -f "ArkAscendedServer.exe.*$instance" > /dev/null; then
+    load_instance_config "$instance" || return 1
+    if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
         echo "Server for instance $instance is running."
     else
         echo "Server for instance $instance is not running."
@@ -279,9 +322,12 @@ show_running_instances() {
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
-            if pgrep -f "ArkAscendedServer.exe.*$instance_name" > /dev/null; then
-                echo -e "\e[32m$instance_name is running\e[0m"
-                ((running_count++))
+            if [ -f "$INSTANCES_DIR/$instance_name/server.pid" ]; then
+                pid=$(cat "$INSTANCES_DIR/$instance_name/server.pid")
+                if ps -p "$pid" > /dev/null; then
+                    echo -e "\e[32m$instance_name is running (PID $pid)\e[0m"
+                    ((running_count++))
+                fi
             fi
         fi
     done
@@ -306,9 +352,15 @@ delete_instance() {
         read -p "Are you sure you want to proceed? (y/N): " confirm
         if [[ $confirm =~ ^[Yy]$ ]]; then
             # Stop the instance if it's running
-            if pgrep -f "ArkAscendedServer.exe.*$instance" > /dev/null; then
+            if [ -f "$INSTANCES_DIR/$instance/server.pid" ]; then
                 echo "Stopping instance '$instance'..."
                 stop_server "$instance"
+            fi
+
+            # Remove symlink and restore original Config directory if necessary
+            rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+            if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" ]; then
+                mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
             fi
 
             # Delete the instance directory
