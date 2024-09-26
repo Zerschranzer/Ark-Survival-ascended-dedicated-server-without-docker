@@ -159,11 +159,15 @@ For managing multiple ARK server instances, use the `ark_instance_manager.sh` sc
 
 This script provides the following main options:
 
-1. Install/Update Base Server
-2. List Instances
-3. Create New Instance
-4. Manage Instance
-5. Exit
+1) Install/Update Base Server
+2) List Instances
+3) Create New Instance
+4) Manage Instance
+5) Start All Instances
+6) Stop All Instances
+7) Show Running Instances
+8) Delete Instance
+9) Exit
 
 ### Managing Instances
 
@@ -235,6 +239,6 @@ Finally, at 4:00 AM, the server is restarted.
 
 For `asamanager.sh`, you can modify the startup parameters in the `script_config.cfg` file.
 
-For `ark_instance_manager.sh`, each instance has its own configuration file located in its instance directory. You can edit these configurations through the script's "Edit Configuration" option when managing an instance.
+For `ark_instance_manager.sh`, each instance has its own configuration file located in its instance directory. You can edit these configurations through the script's "Edit Configuration" option when managing an instance. Each instance also have its own GameUserSettings.ini located in its instance/config directory. Ive also added cluster support.
 
 For both scripts, it's recommended to use the built-in options for changing maps or adding mods, as these will automatically adjust the necessary configuration files.
