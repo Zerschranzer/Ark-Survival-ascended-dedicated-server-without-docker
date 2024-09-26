@@ -23,7 +23,7 @@ RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERS
 
 # Function to install base server
 install_base_server() {
-    echo "Installing base server..."
+    echo "Installing/updating base server..."
 
     # Create necessary directories
     mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$RCON_CLI_DIR" "$SERVER_FILES_DIR"
@@ -62,12 +62,42 @@ install_base_server() {
     echo "Installing/Updating ARK server..."
     "$STEAMCMD_DIR/steamcmd.sh" +force_install_dir "$SERVER_FILES_DIR" +login anonymous +app_update 2430930 validate +quit
 
-    echo -e "\e[32mBase server installation completed.\e[0m"
+    # Check, if config dir exists
+    if [ ! -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/" ]; then
+        echo "First installation detected. Initializing Proton prefix..."
+
+        # Set Proton environment variables
+        export STEAM_COMPAT_DATA_PATH="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
+        export STEAM_COMPAT_CLIENT_INSTALL_PATH="$BASE_DIR"
+
+        # Initialize Proton prefix
+        initialize_proton_prefix
+
+        echo "Starting server once to generate configuration files..."
+
+        # Initial server start
+        "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
+            "TheIsland_WP?listen" \
+            -NoBattlEye \
+            -crossplay \
+            -server \
+            -log \
+            -nosteamclient \
+            -game &
+        # Wait to generate files
+        sleep 60
+        # Stop the Server
+        pkill -f "ArkAscendedServer.exe.*TheIsland_WP"
+        echo "Initial server start completed."
+    else
+        echo "Server configuration directory already exists. Skipping initial server start."
+    fi
+
+    echo -e "\e[32mBase server installation/update completed.\e[0m"
 }
 
 # Function to initialize Proton prefix
 initialize_proton_prefix() {
-    local instance=$1
     local proton_prefix="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
 
     # Ensure the directory exists
@@ -79,7 +109,7 @@ initialize_proton_prefix() {
     # Set permissions
     chmod -R 755 "$proton_prefix"
 
-    echo "Proton prefix initialized for instance: $instance"
+    echo "Proton prefix initialized."
 }
 
 # Function to list all instances
