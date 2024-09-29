@@ -8,7 +8,7 @@
 
 # ---------- CONFIGURATION ----------
 # Define your server instances here (use the names you use in ark_instance_manager.sh)
-instances=("zerschranzer" "zerschranzer1")
+instances=("instanceexample" "instanceexample")
 
 # Define the exact announcement times in seconds
 # Each value represents how many seconds before the restart the message should be sent
