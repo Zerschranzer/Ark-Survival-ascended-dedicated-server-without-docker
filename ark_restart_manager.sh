@@ -23,8 +23,9 @@ announcement_messages=(
     "Server restart in 10 seconds"
 )
 
-# The ark_instance_manager.sh path (relative or absolute)
-ark_manager="./ark_instance_manager.sh"
+# The ark_instance_manager.sh path is set to the directory where your ark_restart_manager.sh is located
+script_dir="$(dirname "$(realpath "$0")")"
+ark_manager="$script_dir/ark_instance_manager.sh"
 
 # Time to wait after issuing 'saveworld' (in seconds)
 save_wait_time=20
@@ -32,8 +33,8 @@ save_wait_time=20
 # Time to wait between starting instances (in seconds)
 start_wait_time=30
 
-# Log file location
-log_file="./ark_restart_manager.log"
+# Log file location in the same directory where your ark_restart_manager.sh is located
+log_file="$script_dir/ark_restart_manager.log"
 # -----------------------------------
 
 # Function to log messages
