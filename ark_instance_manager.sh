@@ -1,5 +1,38 @@
 #!/bin/bash
 
+# Color definitions
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[33m'
+BLUE='\e[34m'
+MAGENTA='\e[35m'
+CYAN='\e[36m'
+RESET='\e[0m'
+
+# Signal handling to inform the user
+trap 'echo -e "${RED}Script interrupted. Servers that have already started will continue running.${RESET}"; pkill -P $$; exit 1' SIGINT SIGTERM
+
+# Function to check required dependencies
+check_dependencies() {
+    local missing=()
+    local dependencies=("wget" "tar" "grep" "pkill" )
+
+    for cmd in "${dependencies[@]}"; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
+
+    if [ ${#missing[@]} -ne 0 ]; then
+        echo -e "${RED}Error: The following required commands are missing: ${missing[*]}${RESET}"
+        echo "Please install them and try again."
+        exit 1
+    fi
+}
+
+# Check dependencies before proceeding
+check_dependencies
+
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 export LANGUAGE=C.UTF-8
@@ -16,55 +49,55 @@ PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
 RCONCLI_VERSION="0.10.3"
 RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
 
-# Define URLS for Steamcmd, Proton, and rconcli
+# Define URLs for SteamCMD, Proton, and RCON CLI
 STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
 RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
 
-# Function to install base server
+# Function to install or update the base server
 install_base_server() {
-    echo "Installing/updating base server..."
+    echo -e "${CYAN}Installing/updating base server...${RESET}"
 
     # Create necessary directories
     mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$RCON_CLI_DIR" "$SERVER_FILES_DIR"
 
-    # Download and unpack Steamcmd
+    # Download and unpack SteamCMD if not already installed
     if [ ! -f "$STEAMCMD_DIR/steamcmd.sh" ]; then
-        echo "Downloading SteamCMD..."
-        wget -O "$STEAMCMD_DIR/steamcmd_linux.tar.gz" "$STEAMCMD_URL"
-        tar -xzvf "$STEAMCMD_DIR/steamcmd_linux.tar.gz" -C "$STEAMCMD_DIR"
+        echo -e "${CYAN}Downloading SteamCMD...${RESET}"
+        wget -q -O "$STEAMCMD_DIR/steamcmd_linux.tar.gz" "$STEAMCMD_URL"
+        tar -xzf "$STEAMCMD_DIR/steamcmd_linux.tar.gz" -C "$STEAMCMD_DIR"
         rm "$STEAMCMD_DIR/steamcmd_linux.tar.gz"
     else
-        echo "SteamCMD already installed."
+        echo -e "${GREEN}SteamCMD already installed.${RESET}"
     fi
 
-    # Download and unpack Proton
+    # Download and unpack Proton if not already installed
     if [ ! -d "$PROTON_DIR/files" ]; then
-        echo "Downloading Proton..."
-        wget -O "$PROTON_DIR/$PROTON_VERSION.tar.gz" "$PROTON_URL"
-        tar -xzvf "$PROTON_DIR/$PROTON_VERSION.tar.gz" -C "$PROTON_DIR" --strip-components=1
+        echo -e "${CYAN}Downloading Proton...${RESET}"
+        wget -q -O "$PROTON_DIR/$PROTON_VERSION.tar.gz" "$PROTON_URL"
+        tar -xzf "$PROTON_DIR/$PROTON_VERSION.tar.gz" -C "$PROTON_DIR" --strip-components=1
         rm "$PROTON_DIR/$PROTON_VERSION.tar.gz"
     else
-        echo "Proton already installed."
+        echo -e "${GREEN}Proton already installed.${RESET}"
     fi
 
-    # Download and unpack rcon-cli
+    # Download and unpack RCON CLI if not already installed
     if [ ! -f "$RCON_CLI_DIR/rcon" ]; then
-        echo "Downloading rcon-cli..."
-        wget -O "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" "$RCONCLI_URL"
-        tar -xzvf "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
+        echo -e "${CYAN}Downloading RCON CLI...${RESET}"
+        wget -q -O "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" "$RCONCLI_URL"
+        tar -xzf "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
         rm "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
     else
-        echo "rcon-cli already installed."
+        echo -e "${GREEN}RCON CLI already installed.${RESET}"
     fi
 
-    # Install/Update ARK server
-    echo "Installing/Updating ARK server..."
+    # Install or update ARK server using SteamCMD
+    echo -e "${CYAN}Installing/updating ARK server...${RESET}"
     "$STEAMCMD_DIR/steamcmd.sh" +force_install_dir "$SERVER_FILES_DIR" +login anonymous +app_update 2430930 validate +quit
 
-    # Check, if config dir exists
+    # Check if configuration directory exists
     if [ ! -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/" ]; then
-        echo "First installation detected. Initializing Proton prefix..."
+        echo -e "${CYAN}First installation detected. Initializing Proton prefix...${RESET}"
 
         # Set Proton environment variables
         export STEAM_COMPAT_DATA_PATH="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
@@ -73,9 +106,9 @@ install_base_server() {
         # Initialize Proton prefix
         initialize_proton_prefix
 
-        echo "Starting server once to generate configuration files..."
+        echo -e "${CYAN}Starting server once to generate configuration files...${RESET}"
 
-        # Initial server start
+        # Initial server start to generate configs
         "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
             "TheIsland_WP?listen" \
             -NoBattlEye \
@@ -86,14 +119,14 @@ install_base_server() {
             -game &
         # Wait to generate files
         sleep 60
-        # Stop the Server
+        # Stop the server
         pkill -f "ArkAscendedServer.exe.*TheIsland_WP"
-        echo "Initial server start completed."
+        echo -e "${GREEN}Initial server start completed.${RESET}"
     else
-        echo "Server configuration directory already exists. Skipping initial server start."
+        echo -e "${GREEN}Server configuration directory already exists. Skipping initial server start.${RESET}"
     fi
 
-    echo -e "\e[32mBase server installation/update completed.\e[0m"
+    echo -e "${GREEN}Base server installation/update completed.${RESET}"
 }
 
 # Function to initialize Proton prefix
@@ -106,16 +139,13 @@ initialize_proton_prefix() {
     # Copy the default Proton prefix
     cp -r "$PROTON_DIR/files/share/default_pfx/." "$proton_prefix/"
 
-    # Set permissions
-    chmod -R 755 "$proton_prefix"
-
-    echo "Proton prefix initialized."
+    echo -e "${GREEN}Proton prefix initialized.${RESET}"
 }
 
 # Function to list all instances
 list_instances() {
-    echo "Available instances:"
-    ls -1 "$INSTANCES_DIR" 2>/dev/null || echo "No instances found."
+    echo -e "${YELLOW}Available instances:${RESET}"
+    ls -1 "$INSTANCES_DIR" 2>/dev/null || echo -e "${RED}No instances found.${RESET}"
 }
 
 # Function to create or edit instance configuration
@@ -123,29 +153,39 @@ edit_instance_config() {
     local instance=$1
     local config_file="$INSTANCES_DIR/$instance/instance_config.ini"
 
+    # Create instance directory if it doesn't exist
+    if [ ! -d "$INSTANCES_DIR/$instance" ]; then
+        mkdir -p "$INSTANCES_DIR/$instance"
+    fi
+
     # Create config file if it doesn't exist
     if [ ! -f "$config_file" ]; then
-        echo "[ServerSettings]" > "$config_file"
-        echo "ServerName=ARK Server $instance" >> "$config_file"
-        echo "ServerPassword=" >> "$config_file"
-        echo "ServerAdminPassword=adminpassword" >> "$config_file"
-        echo "MaxPlayers=70" >> "$config_file"
-        echo "MapName=TheIsland_WP" >> "$config_file"
-        echo "RCONPort=27020" >> "$config_file"
-        echo "QueryPort=27015" >> "$config_file"
-        echo "Port=7777" >> "$config_file"
-        echo "ModIDs=" >> "$config_file"
-        echo "SaveDir=$instance" >> "$config_file"
-        echo "ClusterID=" >> "$config_file"
+        cat <<EOF > "$config_file"
+[ServerSettings]
+ServerName=ARK Server $instance
+ServerPassword=
+ServerAdminPassword=adminpassword
+MaxPlayers=70
+MapName=TheIsland_WP
+RCONPort=27020
+QueryPort=27015
+Port=7777
+ModIDs=
+SaveDir=$instance
+ClusterID=
+EOF
+        chmod 600 "$config_file"  # Set file permissions to be owner-readable and writable
     fi
 
     # Open the config file in the default text editor
-    if command -v nano >/dev/null 2>&1; then
+    if [ -n "$EDITOR" ]; then
+        "$EDITOR" "$config_file"
+    elif command -v nano >/dev/null 2>&1; then
         nano "$config_file"
     elif command -v vim >/dev/null 2>&1; then
         vim "$config_file"
     else
-        echo "No suitable text editor found. Please edit $config_file manually."
+        echo -e "${RED}No suitable text editor found. Please edit $config_file manually.${RESET}"
     fi
 }
 
@@ -168,35 +208,63 @@ load_instance_config() {
         SAVE_DIR=$(grep "SaveDir=" "$config_file" | cut -d= -f2-)
         CLUSTER_ID=$(grep "ClusterID=" "$config_file" | cut -d= -f2-)
     else
-        echo "Configuration file for instance $instance not found."
+        echo -e "${RED}Configuration file for instance $instance not found.${RESET}"
         return 1
     fi
 }
 
-# Function to create a new instance
+# Function to create a new instance (using 'read' with validation)
 create_instance() {
-    echo "Enter the name for the new instance:"
-    read -r instance_name
-    if [ -d "$INSTANCES_DIR/$instance_name" ]; then
-        echo "Instance already exists."
-        return
-    fi
-    mkdir -p "$INSTANCES_DIR/$instance_name"
-    edit_instance_config "$instance_name"
-    initialize_proton_prefix "$instance_name"
-    echo "Instance $instance_name created, configured, and Proton prefix initialized."
+    while true; do
+        echo -e "${CYAN}Enter the name for the new instance (or type 'cancel' to abort):${RESET}"
+        read -r instance_name
+        if [ "$instance_name" = "cancel" ]; then
+            echo -e "${YELLOW}Instance creation cancelled.${RESET}"
+            return
+        elif [ -z "$instance_name" ]; then
+            echo -e "${RED}Instance name cannot be empty.${RESET}"
+        elif [ -d "$INSTANCES_DIR/$instance_name" ]; then
+            echo -e "${RED}Instance already exists.${RESET}"
+        else
+            mkdir -p "$INSTANCES_DIR/$instance_name"
+            edit_instance_config "$instance_name"
+            initialize_proton_prefix "$instance_name"
+            echo -e "${GREEN}Instance $instance_name created and configured.${RESET}"
+            return
+        fi
+    done
 }
 
-# Function to select an instance
+# Function to select an instance using 'select'
 select_instance() {
-    list_instances
-    echo "Enter the name of the instance you want to manage:"
-    read -r selected_instance
-    if [ ! -d "$INSTANCES_DIR/$selected_instance" ]; then
-        echo "Instance does not exist."
+    local instances=()
+    local i=1
+
+    # Populate the instances array
+    for dir in "$INSTANCES_DIR"/*; do
+        if [ -d "$dir" ]; then
+            instances+=("$(basename "$dir")")
+        fi
+    done
+
+    if [ ${#instances[@]} -eq 0 ]; then
+        echo -e "${RED}No instances found.${RESET}"
         return 1
     fi
-    return 0
+
+    echo -e "${YELLOW}Available instances:${RESET}"
+    PS3="Please select an instance: "
+    select selected_instance in "${instances[@]}" "Cancel"; do
+        if [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${#instances[@]}" ]; then
+            echo -e "${GREEN}You have selected: $selected_instance${RESET}"
+            return 0
+        elif [ "$REPLY" -eq $((${#instances[@]} + 1)) ]; then
+            echo -e "${YELLOW}Operation cancelled.${RESET}"
+            return 1
+        else
+            echo -e "${RED}Invalid selection.${RESET}"
+        fi
+    done
 }
 
 # Function to start the server
@@ -204,7 +272,7 @@ start_server() {
     local instance=$1
     load_instance_config "$instance" || return 1
 
-    echo "Starting server for instance: $instance"
+    echo -e "${CYAN}Starting server for instance: $instance${RESET}"
 
     # Set Proton environment variables
     export STEAM_COMPAT_DATA_PATH="$SERVER_FILES_DIR/steamapps/compatdata/2430930"
@@ -215,6 +283,8 @@ start_server() {
     if [ ! -d "$instance_config_dir" ]; then
         mkdir -p "$instance_config_dir"
         cp -r "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/." "$instance_config_dir/"
+        # Set permissions for GameUserSettings.ini
+        chmod 600 "$instance_config_dir/GameUserSettings.ini"
     fi
 
     # Backup the original Config directory if not already backed up
@@ -238,7 +308,7 @@ start_server() {
         cluster_params="-ClusterDirOverride=\"$cluster_dir\" -ClusterId=\"$CLUSTER_ID\""
     fi
 
-    # Use the loaded configuration variables here
+    # Start the server using the loaded configuration variables
     "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
         "$MAP_NAME?listen?SessionName=$SERVER_NAME?MaxPlayers=$MAX_PLAYERS?ServerPassword=$SERVER_PASSWORD?ServerAdminPassword=$ADMIN_PASSWORD?QueryPort=$QUERY_PORT?Port=$GAME_PORT?RCONEnabled=True?RCONPort=$RCON_PORT?AltSaveDirectoryName=$SAVE_DIR" \
         -NoBattlEye \
@@ -253,16 +323,16 @@ start_server() {
         -mods="$MOD_IDS" \
         > "$INSTANCES_DIR/$instance/server.log" 2>&1 &
 
-    echo "Server started for instance: $instance"
+    echo -e "${GREEN}Server started for instance: $instance${RESET}"
 }
 
 # Function to stop the server
 stop_server() {
     local instance=$1
     load_instance_config "$instance" || return 1
-    echo "Stopping server for instance: $instance"
+    echo -e "${CYAN}Stopping server for instance: $instance${RESET}"
     pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR"
-    echo "Server stopped for instance: $instance"
+    echo -e "${GREEN}Server stopped for instance: $instance${RESET}"
 }
 
 # Function to start RCON CLI
@@ -270,7 +340,7 @@ start_rcon_cli() {
     local instance=$1
     load_instance_config "$instance" || return 1
 
-    echo "Starting RCON CLI for instance: $instance"
+    echo -e "${CYAN}Starting RCON CLI for instance: $instance${RESET}"
     "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD"
 }
 
@@ -279,11 +349,11 @@ change_map() {
     local instance=$1
     load_instance_config "$instance" || return 1
 
-    echo "Current map: $MAP_NAME"
-    echo "Enter the new map name:"
+    echo -e "${CYAN}Current map: $MAP_NAME${RESET}"
+    echo -e "${CYAN}Enter the new map name:${RESET}"
     read -r new_map_name
     sed -i "s/MapName=.*/MapName=$new_map_name/" "$INSTANCES_DIR/$instance/instance_config.ini"
-    echo "Map changed to $new_map_name. Restart the server for changes to take effect."
+    echo -e "${GREEN}Map changed to $new_map_name. Restart the server for changes to take effect.${RESET}"
 }
 
 # Function to change mods
@@ -291,11 +361,11 @@ change_mods() {
     local instance=$1
     load_instance_config "$instance" || return 1
 
-    echo "Current mods: $MOD_IDS"
-    echo "Enter the new mod IDs (comma-separated):"
+    echo -e "${CYAN}Current mods: $MOD_IDS${RESET}"
+    echo -e "${CYAN}Enter the new mod IDs (comma-separated):${RESET}"
     read -r new_mod_ids
     sed -i "s/ModIDs=.*/ModIDs=$new_mod_ids/" "$INSTANCES_DIR/$instance/instance_config.ini"
-    echo "Mods changed to $new_mod_ids. Restart the server for changes to take effect."
+    echo -e "${GREEN}Mods changed to $new_mod_ids. Restart the server for changes to take effect.${RESET}"
 }
 
 # Function to check server status
@@ -303,40 +373,39 @@ check_server_status() {
     local instance=$1
     load_instance_config "$instance" || return 1
     if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
-        echo "Server for instance $instance is running."
+        echo -e "${GREEN}Server for instance $instance is running.${RESET}"
     else
-        echo "Server for instance $instance is not running."
+        echo -e "${RED}Server for instance $instance is not running.${RESET}"
     fi
 }
 
-# Function to start all instances
+# Function to start all instances with a delay between each
 start_all_instances() {
-    echo "Starting all server instances..."
+    echo -e "${CYAN}Starting all server instances...${RESET}"
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
-            echo "Starting instance: $instance_name"
+            echo -e "${CYAN}Starting instance: $instance_name${RESET}"
             start_server "$instance_name"
-
             # Waiting 30 seconds before starting the next instance
-            echo "Waiting 30 seconds before starting the next instance..."
+            echo -e "${YELLOW}Waiting 30 seconds before starting the next instance...${RESET}"
             sleep 30
         fi
     done
-    echo "All instances have been started."
+    echo -e "${GREEN}All instances have been started.${RESET}"
 }
 
 # Function to stop all instances
 stop_all_instances() {
-    echo "Stopping all server instances..."
+    echo -e "${CYAN}Stopping all server instances...${RESET}"
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
-            echo "Stopping instance: $instance_name"
+            echo -e "${CYAN}Stopping instance: $instance_name${RESET}"
             stop_server "$instance_name"
         fi
     done
-    echo "All instances have been stopped."
+    echo -e "${GREEN}All instances have been stopped.${RESET}"
 }
 
 # Function to send RCON command
@@ -345,32 +414,32 @@ send_rcon_command() {
     local command=$2
     load_instance_config "$instance" || return 1
 
-    echo "Sending RCON command to instance: $instance"
+    echo -e "${CYAN}Sending RCON command to instance: $instance${RESET}"
     "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
 }
 
 # Function to show running instances
 show_running_instances() {
-    echo "Checking running instances..."
+    echo -e "${CYAN}Checking running instances...${RESET}"
     local running_count=0
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
-            # Laden der Instanzkonfiguration
+            # Load instance configuration
             load_instance_config "$instance_name" || continue
-            # Prüfen, ob der Server läuft
+            # Check if the server is running
             if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
-                echo -e "\e[32m$instance_name is running\e[0m"
+                echo -e "${GREEN}$instance_name is running${RESET}"
                 ((running_count++))
             else
-                echo -e "\e[31m$instance_name is not running\e[0m"
+                echo -e "${RED}$instance_name is not running${RESET}"
             fi
         fi
     done
     if [ $running_count -eq 0 ]; then
-        echo "No instances are currently running."
+        echo -e "${RED}No instances are currently running.${RESET}"
     else
-        echo "Total running instances: $running_count"
+        echo -e "${GREEN}Total running instances: $running_count${RESET}"
     fi
 }
 
@@ -378,152 +447,181 @@ show_running_instances() {
 delete_instance() {
     local instance=$1
     if [ -z "$instance" ]; then
-        echo "Please select an instance to delete:"
-        select_instance
+        if ! select_instance; then
+            return
+        fi
         instance=$selected_instance
     fi
 
     if [ -d "$INSTANCES_DIR/$instance" ]; then
-        echo -e "\e[31mWarning: This will permanently delete the instance '$instance' and all its data.\e[0m"
+        echo -e "${RED}Warning: This will permanently delete the instance '$instance' and all its data.${RESET}"
         read -p "Are you sure you want to proceed? (y/N): " confirm
         if [[ $confirm =~ ^[Yy]$ ]]; then
             # Load instance config
             load_instance_config "$instance"
 
-            # Stop instance, if its running
+            # Stop instance if it's running
             if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
-                echo "Stopping instance '$instance'..."
+                echo -e "${CYAN}Stopping instance '$instance'...${RESET}"
                 stop_server "$instance"
             fi
 
-            # Check, if other instances are running
+            # Check if other instances are running
             if pgrep -f "ArkAscendedServer.exe" > /dev/null; then
-                echo "Other instances are still running. Not removing the Config symlink to avoid affecting other servers."
+                echo -e "${YELLOW}Other instances are still running. Not removing the Config symlink to avoid affecting other servers.${RESET}"
             else
-                # Removing the symlink and restoring the original configuration directory:
+                # Remove the symlink and restore the original configuration directory
                 rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
                 if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" ]; then
                     mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
                 fi
             fi
 
-            # Deleting the instance directory
+            # Deleting the instance directory and save games
             rm -rf "$INSTANCES_DIR/$instance"
-            echo -e "\e[32mInstance '$instance' has been deleted.\e[0m"
+            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/$instance"
+            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance"
+            echo -e "${GREEN}Instance '$instance' has been deleted.${RESET}"
         else
-            echo "Deletion cancelled."
+            echo -e "${YELLOW}Deletion cancelled.${RESET}"
         fi
     else
-        echo "Instance '$instance' does not exist."
+        echo -e "${RED}Instance '$instance' does not exist.${RESET}"
     fi
 }
 
-# Main menu
+# Main menu using 'select'
 main_menu() {
     while true; do
-        echo -e "\e[38;5;214mARK Server Instance Management\e[0m"
+        echo -e "${YELLOW}ARK Server Instance Management${RESET}"
         echo
-        echo -e "\e[38;5;214m1) Install/Update Base Server\e[0m"
-        echo -e "\e[38;5;214m2) List Instances\e[0m"
-        echo -e "\e[38;5;214m3) Create New Instance\e[0m"
-        echo -e "\e[38;5;214m4) Manage Instance\e[0m"
-        echo -e "\e[38;5;214m5) Start All Instances\e[0m"
-        echo -e "\e[38;5;214m6) Stop All Instances\e[0m"
-        echo -e "\e[38;5;214m7) Show Running Instances\e[0m"
-        echo -e "\e[38;5;214m8) Delete Instance\e[0m"
-        echo -e "\e[38;5;214m9) Exit\e[0m"
-        echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
-        read -r option
-        case $option in
-            1)
-                install_base_server
-                ;;
-            2)
-                list_instances
-                ;;
-            3)
-                create_instance
-                ;;
-            4)
-                if select_instance; then
-                    manage_instance "$selected_instance"
-                fi
-                ;;
-            5)
-                start_all_instances
-                ;;
-            6)
-                stop_all_instances
-                ;;
-            7)
-                show_running_instances
-                ;;
-            8)
-                delete_instance
-                ;;
-            9)
-                echo "Exiting ARK Server Manager. Goodbye!"
-                exit 0
-                ;;
-            *)
-                echo "Invalid option selected."
-                ;;
-        esac
+        options=(
+            "Install/Update Base Server"
+            "List Instances"
+            "Create New Instance"
+            "Manage Instance"
+            "Start All Instances"
+            "Stop All Instances"
+            "Show Running Instances"
+            "Delete Instance"
+            "Exit"
+        )
+
+        PS3="Please choose an option: "
+        select opt in "${options[@]}"; do
+            case "$REPLY" in
+                1)
+                    install_base_server
+                    break
+                    ;;
+                2)
+                    list_instances
+                    break
+                    ;;
+                3)
+                    create_instance
+                    break
+                    ;;
+                4)
+                    if select_instance; then
+                        manage_instance "$selected_instance"
+                    fi
+                    break
+                    ;;
+                5)
+                    start_all_instances
+                    break
+                    ;;
+                6)
+                    stop_all_instances
+                    break
+                    ;;
+                7)
+                    show_running_instances
+                    break
+                    ;;
+                8)
+                    if select_instance; then
+                        delete_instance "$selected_instance"
+                    fi
+                    break
+                    ;;
+                9)
+                    echo -e "${GREEN}Exiting ARK Server Manager. Goodbye!${RESET}"
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option selected.${RESET}"
+                    ;;
+            esac
+        done
     done
 }
 
-# Instance management menu
+# Instance management menu using 'select'
 manage_instance() {
     local instance=$1
     while true; do
-        echo -e "\e[38;5;214mManaging Instance: $instance\e[0m"
+        echo -e "${YELLOW}Managing Instance: $instance${RESET}"
         echo
-        echo -e "\e[38;5;214m1) Start Server\e[0m"
-        echo -e "\e[38;5;214m2) Stop Server\e[0m"
-        echo -e "\e[38;5;214m3) Restart Server\e[0m"
-        echo -e "\e[38;5;214m4) Open RCON Console\e[0m"
-        echo -e "\e[38;5;214m5) Edit Configuration\e[0m"
-        echo -e "\e[38;5;214m6) Change Map\e[0m"
-        echo -e "\e[38;5;214m7) Change Mods\e[0m"
-        echo -e "\e[38;5;214m8) Check Server Status\e[0m"
-        echo -e "\e[38;5;214m9) Back to Main Menu\e[0m"
-        echo -e "\e[38;5;214mPlease choose an option:\e[0m"
 
-        read -r option
-        case $option in
-            1)
-                start_server "$instance"
-                ;;
-            2)
-                stop_server "$instance"
-                ;;
-            3)
-                stop_server "$instance"
-                start_server "$instance"
-                ;;
-            4)
-                start_rcon_cli "$instance"
-                ;;
-            5)
-                edit_instance_config "$instance"
-                ;;
-            6)
-                change_map "$instance"
-                ;;
-            7)
-                change_mods "$instance"
-                ;;
-            8)
-                check_server_status "$instance"
-                ;;
-            9)
-                return
-                ;;
-            *)
-                echo "Invalid option selected."
-                ;;
-        esac
+        options=(
+            "Start Server"
+            "Stop Server"
+            "Restart Server"
+            "Open RCON Console"
+            "Edit Configuration"
+            "Change Map"
+            "Change Mods"
+            "Check Server Status"
+            "Back to Main Menu"
+        )
+
+        PS3="Please choose an option: "
+        select opt in "${options[@]}"; do
+            case "$REPLY" in
+                1)
+                    start_server "$instance"
+                    break
+                    ;;
+                2)
+                    stop_server "$instance"
+                    break
+                    ;;
+                3)
+                    stop_server "$instance"
+                    start_server "$instance"
+                    break
+                    ;;
+                4)
+                    start_rcon_cli "$instance"
+                    break
+                    ;;
+                5)
+                    edit_instance_config "$instance"
+                    break
+                    ;;
+                6)
+                    change_map "$instance"
+                    break
+                    ;;
+                7)
+                    change_mods "$instance"
+                    break
+                    ;;
+                8)
+                    check_server_status "$instance"
+                    break
+                    ;;
+                9)
+                    return
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option selected.${RESET}"
+                    ;;
+            esac
+        done
     done
 }
 
@@ -546,7 +644,7 @@ else
             ;;
         delete)
             if [ -z "$2" ]; then
-                echo "Usage: $0 delete <instance_name>"
+                echo -e "${RED}Usage: $0 delete <instance_name>${RESET}"
                 exit 1
             fi
             delete_instance "$2"
@@ -567,15 +665,15 @@ else
                     ;;
                 send_rcon)
                     if [ $# -lt 3 ]; then
-                        echo "Usage: $0 <instance_name> send_rcon \"<rcon_command>\""
+                        echo -e "${RED}Usage: $0 <instance_name> send_rcon \"<rcon_command>\"${RESET}"
                         exit 1
                     fi
                     rcon_command="${@:3}"  # Get all arguments from the third onwards
                     send_rcon_command "$instance_name" "$rcon_command"
                     ;;
                 *)
-                    echo "Usage: $0 [update|start_all|stop_all|show_running|delete <instance_name>]"
-                    echo "       $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\"]"
+                    echo -e "${RED}Usage: $0 [update|start_all|stop_all|show_running|delete <instance_name>]${RESET}"
+                    echo -e "${RED}       $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\"]${RESET}"
                     echo "Or run without arguments to enter interactive mode."
                     exit 1
                     ;;
