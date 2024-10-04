@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Color definitions
 RED='\e[31m'
 GREEN='\e[32m'
@@ -53,6 +55,17 @@ RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
 STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
 RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
+
+# Function to check if a server is running
+is_server_running() {
+    local instance=$1
+    load_instance_config "$instance" || return 1
+    if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
 
 # Function to install or update the base server
 install_base_server() {
@@ -120,7 +133,7 @@ install_base_server() {
         # Wait to generate files
         sleep 60
         # Stop the server
-        pkill -f "ArkAscendedServer.exe.*TheIsland_WP"
+        pkill -f "ArkAscendedServer.exe.*TheIsland_WP" || true
         echo -e "${GREEN}Initial server start completed.${RESET}"
     else
         echo -e "${GREEN}Server configuration directory already exists. Skipping initial server start.${RESET}"
@@ -270,6 +283,11 @@ select_instance() {
 # Function to start the server
 start_server() {
     local instance=$1
+    if is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is already running.${RESET}"
+        return 0
+    fi
+
     load_instance_config "$instance" || return 1
 
     echo -e "${CYAN}Starting server for instance: $instance${RESET}"
@@ -282,29 +300,29 @@ start_server() {
     local instance_config_dir="$INSTANCES_DIR/$instance/Config"
     if [ ! -d "$instance_config_dir" ]; then
         mkdir -p "$instance_config_dir"
-        cp -r "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/." "$instance_config_dir/"
+        cp -r "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/." "$instance_config_dir/" || true
         # Set permissions for GameUserSettings.ini
-        chmod 600 "$instance_config_dir/GameUserSettings.ini"
+        chmod 600 "$instance_config_dir/GameUserSettings.ini" || true
     fi
 
     # Backup the original Config directory if not already backed up
     if [ ! -L "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" ] && [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" ]; then
-        mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak"
+        mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" || true
     fi
 
     # Link the instance Config directory
-    rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
-    ln -s "$instance_config_dir" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+    rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" || true
+    ln -s "$instance_config_dir" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" || true
 
     # Ensure per-instance save directory exists
     local save_dir="$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$SAVE_DIR"
-    mkdir -p "$save_dir"
+    mkdir -p "$save_dir" || true
 
     # Set cluster parameters if ClusterID is set
     local cluster_params=""
     if [ -n "$CLUSTER_ID" ]; then
         local cluster_dir="$BASE_DIR/clusters/$CLUSTER_ID"
-        mkdir -p "$cluster_dir"
+        mkdir -p "$cluster_dir" || true
         cluster_params="-ClusterDirOverride=\"$cluster_dir\" -ClusterId=\"$CLUSTER_ID\""
     fi
 
@@ -329,9 +347,14 @@ start_server() {
 # Function to stop the server
 stop_server() {
     local instance=$1
+    if ! is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is not running.${RESET}"
+        return 0
+    fi
+
     load_instance_config "$instance" || return 1
     echo -e "${CYAN}Stopping server for instance: $instance${RESET}"
-    pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR"
+    pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" || true
     echo -e "${GREEN}Server stopped for instance: $instance${RESET}"
 }
 
@@ -385,6 +408,10 @@ start_all_instances() {
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
+            if is_server_running "$instance_name"; then
+                echo -e "${YELLOW}Instance $instance_name is already running. Skipping...${RESET}"
+                continue
+            fi
             echo -e "${CYAN}Starting instance: $instance_name${RESET}"
             start_server "$instance_name"
             # Waiting 30 seconds before starting the next instance
@@ -401,6 +428,10 @@ stop_all_instances() {
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
+            if ! is_server_running "$instance_name"; then
+                echo -e "${YELLOW}Instance $instance_name is not running. Skipping...${RESET}"
+                continue
+            fi
             echo -e "${CYAN}Stopping instance: $instance_name${RESET}"
             stop_server "$instance_name"
         fi
@@ -412,10 +443,15 @@ stop_all_instances() {
 send_rcon_command() {
     local instance=$1
     local command=$2
+    if ! is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is not running. Cannot send RCON command.${RESET}"
+        return 1
+    fi
+
     load_instance_config "$instance" || return 1
 
     echo -e "${CYAN}Sending RCON command to instance: $instance${RESET}"
-    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command"
+    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command" || true
 }
 
 # Function to show running instances
