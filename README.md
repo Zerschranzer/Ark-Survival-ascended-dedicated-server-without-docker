@@ -4,7 +4,7 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
 
 ## Features
 
-- Automatic dependency checking and installation
+- Automatic dependency checking
 - Multi-instance server management
 - Interactive menu for easy server administration
 - Command-line interface for automation and remote management
