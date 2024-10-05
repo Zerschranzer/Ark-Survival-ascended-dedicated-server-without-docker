@@ -129,7 +129,7 @@ check_dependencies() {
                 ;;
         esac
 
-        echo -e "${YELLOW}Continue anyway?${RESET} ${RED}(not recommended) [y/N]${RESET}"
+        echo -e "${YELLOW}Continue anyway?${RESET} ${RED}(not recommended)${RESET} ${YELLOW}[y/N]${RESET}"
         read -r response
         if [[ ! $response =~ ^[Yy]$ ]]; then
             echo -e "${RED}Exiting due to missing dependencies.${RESET}"
