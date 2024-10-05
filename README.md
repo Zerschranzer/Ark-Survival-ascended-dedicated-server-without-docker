@@ -194,3 +194,10 @@ The Restart Manager performs the following actions:
 - Check the server logs in the instance directory: `instances/<instance_name>/server.log`
 - Ensure all dependencies are correctly installed
 - Verify that the required ports are open in your firewall
+
+## Credits
+
+This project makes use of the following open-source tools:
+- [rcon-cli](https://github.com/gorcon/rcon-cli) for remote console management.
+- [Proton GE Custom](https://github.com/GloriousEggroll/proton-ge-custom) for running Windows applications on Linux.
+A big thanks to the developers of these tools who make my server manager possible!
