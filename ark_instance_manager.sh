@@ -62,7 +62,7 @@ check_dependencies() {
     # Check for missing dependencies
     for cmd in "${dependencies[@]}"; do
         if [ "$package_manager" == "apt-get" ] && [[ "$cmd" == *:i386* || "$cmd" == *:amd64* ]]; then
-            if ! dpkg --get-selections | grep -q "${cmd%%:*}" && ! ldconfig -p | grep -q "${cmd}"; then
+            if ! dpkg-query -W -f='${Status}' "$cmd" 2>/dev/null | grep -q "install ok installed"; then
                 missing+=("$cmd")
             fi
         elif [ "$package_manager" == "zypper" ]; then
@@ -322,6 +322,13 @@ load_instance_config() {
 
 # Function to create a new instance (using 'read' with validation)
 create_instance() {
+    # Check if the directory exists
+    if [ ! -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/" ]; then
+        echo -e "${RED}The required directory does not exist: $SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer/${RESET}"
+        echo -e "${YELLOW}Cannot proceed with instance creation.You need to install Base Server first${RESET}"
+        return
+    fi
+
     while true; do
         echo -e "${CYAN}Enter the name for the new instance (or type 'cancel' to abort):${RESET}"
         read -r instance_name
