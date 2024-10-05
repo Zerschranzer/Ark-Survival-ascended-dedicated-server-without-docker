@@ -1,14 +1,11 @@
 #!/bin/bash
 
-# ==========================
-# ARK Server Restart Manager
-# ==========================
-# A flexible and efficient script to manage ARK server restarts.
-# Users can define their own announcement times and restart intervals.
+# Note: Make sure that both this script (ark_restart_manager.sh) and the ark_instance_manager.sh script are located in the same directory.
 
-# ---------- CONFIGURATION ----------
+# --------------------------------------------- CONFIGURATION STARTS HERE --------------------------------------------- #
+
 # Define your server instances here (use the names you use in ark_instance_manager.sh)
-instances=("instanceexample" "instanceexample")
+instances=("instanceexample1" "instanceexample2")
 
 # Define the exact announcement times in seconds
 # Each value represents how many seconds before the restart the message should be sent
@@ -22,19 +19,11 @@ announcement_messages=(
     "Server restart in 3 minutes"
     "Server restart in 10 seconds"
 )
-
-# The ark_instance_manager.sh path is set to the directory where your ark_restart_manager.sh is located
-script_dir="$(dirname "$(realpath "$0")")"
-ark_manager="$script_dir/ark_instance_manager.sh"
-
 # Time to wait after issuing 'saveworld' (in seconds)
 save_wait_time=20
 
 # Time to wait between starting instances (in seconds)
 start_wait_time=30
-
-# Log file location in the same directory where your ark_restart_manager.sh is located
-log_file="$script_dir/ark_restart_manager.log"
 
 # --------------------------------------------- CONFIGURATION ENDS HERE --------------------------------------------- #
 #                                                                                         \   |   /                   #
@@ -54,6 +43,10 @@ log_file="$script_dir/ark_restart_manager.log"
 #######################################################################################################################
 
 
+# Define script and configuration paths as variables
+script_dir="$(dirname "$(realpath "$0")")"
+ark_manager="$script_dir/ark_instance_manager.sh"
+log_file="$script_dir/ark_restart_manager.log"
 
 # Function to log messages
 log_message() {
