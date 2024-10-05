@@ -1,154 +1,196 @@
 # ARK: Survival Ascended Linux Server Manager
 
-Welcome to the comprehensive guide for installing and managing ARK: Survival Ascended servers on Linux. This tool, `ark_instance_manager.sh`, allows you to download, install, and manage ARK servers on Linux—despite the lack of a native ARK: Survival Ascended server for Linux. I developed this script to avoid using Docker while offering a flexible and user-friendly solution.
+Welcome to the comprehensive guide for installing and managing ARK: Survival Ascended servers on Linux. This tool, `ark_instance_manager.sh`, allows you to download, install, and manage multiple ARK servers on Linux—despite the lack of a native ARK: Survival Ascended server for Linux. This script offers a flexible and user-friendly solution without relying on Docker.
 
-## System Preparation
+## Features
 
-Ensure you are logged in as a user with `sudo` rights or as the `root` user to add support for 32-bit architectures on x86_64 systems and install the necessary libraries.
+- Automatic dependency checking and installation
+- Multi-instance server management
+- Interactive menu for easy server administration
+- Command-line interface for automation and remote management
+- Automatic installation of SteamCMD, Proton, and RCON CLI
+- Support for custom maps and mods
+- Cluster support for multi-server setups
+- Colored output for improved readability
+- RCON integration for server commands
 
-### Install Dependencies
+## System Requirements
 
-Depending on your package manager, use the following commands to install the required libraries:
+- A Linux system with one of the following package managers:
+  - apt-get (Debian/Ubuntu)
+  - zypper (OpenSUSE)
+  - dnf (Fedora)
+  - pacman (Arch Linux)
+- Sudo rights or root access
+- Sufficient disk space for ARK server files and instances
 
-#### Fedora (dnf):
-```bash
-sudo dnf install glibc-devel.i686 ncurses-devel.i686 libstdc++-devel.i686
-```
+## Installation and Setup
 
-#### Ubuntu/Debian (apt):
-```bash
-sudo dpkg --add-architecture i386
-sudo apt update
-sudo apt install libc6:i386 libstdc++6:i386 libncursesw6:i386
-```
+1. Download the script:
+   ```bash
+   wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/ark_instance_manager.sh
+   ```
 
-### OpenSUSE (zypper)
-```bash
-sudo zypper install libX11-6-32bit libX11-devel-32bit gcc-32bit libexpat1-32bit libXext6-32bit
-```
+2. Make it executable:
+   ```bash
+   chmod +x ark_instance_manager.sh
+   ```
 
-#### Arch Linux (pacman):
-```bash
-sudo pacman -S lib32-libx11 gcc-multilib lib32-expat lib32-libxext
-```
+3. Run the script to install the base server:
+   ```bash
+   ./ark_instance_manager.sh
+   ```
 
-### Optional: Create a Separate User for the Server
+4. Choose "Install/Update Base Server" from the main menu to download and set up the ARK server files. This function serves to install the server as well as update it to always be up to date. It's crucial to run this before creating any instances to ensure all necessary files are present for starting server instances.
 
-For security reasons, it's recommended to create a separate user without `sudo` permissions to run the ARK server. Use the following commands to create a new user, depending on your distribution:
+**Important:** You must install the base server before creating instances. This ensures that all necessary files are present to start server instances.
 
-```bash
-sudo useradd -m -s /bin/bash asaserver
-sudo passwd asaserver
-```
+## Usage
 
-Switch to this user:
+### Interactive Mode
 
-```bash
-su - asaserver
-```
-
-## Download and Setup the Scripts
-
-To download the `ark_instance_manager.sh` script and make it executable, run the following commands:
-
-```bash
-mkdir -p asaserver
-cd asaserver
-wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/ark_instance_manager.sh
-chmod +x ark_instance_manager.sh
-```
-
-Additionally, you can download the `ark_restart_manager.sh` script for automated server restart management:
-
-```bash
-wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/ark_restart_manager.sh
-chmod +x ark_restart_manager.sh
-```
-
-## Important Note on Server Installation Location
-
-The server will be installed in the directory where you run the scripts. Ensure you have enough disk space in that location before proceeding with the installation.
-
-## Multi-Instance Management with `ark_instance_manager.sh`
-
-This script allows you to fully manage multiple ARK server instances through an interactive menu.
+Run the script without arguments to enter interactive mode:
 
 ```bash
 ./ark_instance_manager.sh
 ```
 
-Main options in the menu:
+This mode provides a user-friendly menu for all server management tasks.
 
-1) Install/Update Base Server
-2) List Instances
-3) Create New Instance
-4) Manage Instance
-5) Start All Instances
-6) Stop All Instances
-7) Show Running Instances
-8) Delete Instance
-9) Exit
+### Command-Line Mode
 
-### Interactive Menu
+The script supports various command-line arguments for quick actions and automation:
 
-The script provides an intuitive, interactive menu for managing server instances. Users can start, stop, configure, and send RCON commands to their servers without needing to manually edit configuration files.
-
-### Argument-Based Usage
-
-The script also supports argument-based usage, making it easy to integrate into Cronjobs or other automated processes. Here are some examples:
-
-- **Update the base server:**
+- Update or install base server:
   ```bash
   ./ark_instance_manager.sh update
   ```
 
-- **Start a specific instance:**
+- Start all instances:
   ```bash
-  ./ark_instance_manager.sh <instance_name> start
+  ./ark_instance_manager.sh start_all
   ```
 
-- **Stop a specific instance:**
+- Stop all instances:
   ```bash
+  ./ark_instance_manager.sh stop_all
+  ```
+
+- Show running instances:
+  ```bash
+  ./ark_instance_manager.sh show_running
+  ```
+
+- Delete an instance:
+  ```bash
+  ./ark_instance_manager.sh delete <instance_name>
+  ```
+
+- Manage a specific instance:
+  ```bash
+  ./ark_instance_manager.sh <instance_name> [start|stop|restart|send_rcon "<rcon_command>"]
+  ```
+
+## Server Management
+
+### Creating a New Instance
+
+1. From the main menu, select "Create New Instance"
+2. Enter a unique name for the instance
+3. Edit the instance configuration file in your default text editor
+
+### Instance Configuration
+
+Each instance has its own configuration file (`instance_config.ini`) with the following settings:
+
+- ServerName
+- ServerPassword
+- ServerAdminPassword
+- MaxPlayers
+- MapName
+- RCONPort
+- QueryPort
+- Port
+- ModIDs
+- SaveDir
+- ClusterID
+
+### Starting and Stopping Servers
+
+- Use the "Start Server" and "Stop Server" options in the instance management menu
+- Or use command-line arguments for quick actions:
+  ```bash
+  ./ark_instance_manager.sh <instance_name> start
   ./ark_instance_manager.sh <instance_name> stop
   ```
 
-- **Send an RCON command to an instance:**
-  ```bash
-  ./ark_instance_manager.sh <instance_name> send_rcon "<rcon_command>"
-  ```
+### Changing Maps and Mods
 
-## Automated Server Restarts with `ark_restart_manager.sh`
+Use the instance management menu to change maps or modify the list of active mods for each instance.
 
-To automate server restarts and updates, you can use the `ark_restart_manager.sh` script. This script allows you to schedule announcements, save the game world, and restart all instances at a specified time. You can easily modify the script using a text editor like nano: `nano ark_restart_manager.sh`. The script contains comments that describe exactly which values can be changed in the script and what function they serve, for example to adjust the waiting time for restart announcements, etc.
+### RCON Console
 
-Here’s how to set it up:
+Access the RCON console for an instance to send commands directly to the server:
 
-1. Download and make the script executable:
+```bash
+./ark_instance_manager.sh <instance_name> send_rcon "<rcon_command>"
+```
+
+## Cluster Management
+
+To set up a cluster of servers:
+
+1. Create multiple instances
+2. Set the same `ClusterID` in the `instance_config.ini` for each instance in the cluster
+3. Start the instances
+
+The script will automatically set up the necessary cluster directory and configuration.
+
+## Using the Restart Manager
+
+The Restart Manager (`ark_restart_manager.sh`) is a separate script that manages automated restarts and updates for your ARK servers. Here's how to use it:
+
+1. Download the Restart Manager script:
    ```bash
    wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/ark_restart_manager.sh
+   ```
+
+2. Make it executable:
+   ```bash
    chmod +x ark_restart_manager.sh
    ```
 
-2. Create a Cronjob to run the restart manager automatically. For example, you can schedule daily restarts at 4:00 AM using the following Cronjob setup:
+3. Edit the script to customize your instances and announcement times:
+   ```bash
+   nano ark_restart_manager.sh
+   ```
 
-   Open the crontab file with:
+   Configure the following variables:
+   - `instances`: List of your server instances
+   - `announcement_times`: Times for restart announcements (in seconds before restart)
+   - `announcement_messages`: Messages for each announcement time
+   - `save_wait_time`: Wait time after saving the world
+   - `start_wait_time`: Wait time between starting instances
+
+4. Set up a cron job to run the Restart Manager regularly:
    ```bash
    crontab -e
    ```
-
-   Add the following entry (adjust the path to your script as necessary):
-
+   
+   Add a line like this to run the Restart Manager daily at 4:00 AM:
    ```
    0 4 * * * /path/to/ark_restart_manager.sh
    ```
 
-This will automatically restart all server instances and save the world at 4:00 AM every day. The `ark_restart_manager.sh` script will also send in-game messages to warn players before the restart, save the game world, and then restart the servers.
+The Restart Manager performs the following actions:
+1. Announces the upcoming restart
+2. Saves the game world for each instance
+3. Stops all server instances
+4. Updates the server
+5. Restarts all server instances
 
-### Customizing Start Parameters
+## Troubleshooting
 
-For `ark_instance_manager.sh`, each instance has its own configuration file located in its instance directory. You can edit these configurations through the script's "Edit Configuration" option when managing an instance. Each instance also has its own GameUserSettings.ini located in its instance/config directory, and the script supports cluster management as well.
-
-
-## Why This Script?
-
-There is no native ARK: Survival Ascended server for Linux, and Docker can be cumbersome and resource-heavy. This script was developed to run the server directly on Linux using Proton, without relying on Docker. It simplifies server management and provides a flexible, automated solution for managing multiple instances.
+- Check the server logs in the instance directory: `instances/<instance_name>/server.log`
+- Ensure all dependencies are correctly installed
+- Verify that the required ports are open in your firewall
