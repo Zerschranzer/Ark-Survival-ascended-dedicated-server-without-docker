@@ -213,7 +213,7 @@ install_base_server() {
         # Initialize Proton prefix
         initialize_proton_prefix
 
-        echo -e "${CYAN}Starting server once to generate configuration files...${RESET}"
+        echo -e "${CYAN}Starting server once to generate configuration files... This will take 60 seconds${RESET}"
 
         # Initial server start to generate configs
         "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
