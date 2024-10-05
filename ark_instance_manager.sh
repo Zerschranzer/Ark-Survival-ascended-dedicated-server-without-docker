@@ -1,5 +1,9 @@
 #!/bin/bash
 
+export LC_ALL=C.UTF-8
+export LANG=C.UTF-8
+export LANGUAGE=C.UTF-8
+
 set -e
 
 # Color definitions
@@ -11,33 +15,120 @@ MAGENTA='\e[35m'
 CYAN='\e[36m'
 RESET='\e[0m'
 
-# Signal handling to inform the user
+# Signal handling to inform the user and kill processes
 trap 'echo -e "${RED}Script interrupted. Servers that have already started will continue running.${RESET}"; pkill -P $$; exit 1' SIGINT SIGTERM
 
-# Function to check required dependencies
 check_dependencies() {
     local missing=()
-    local dependencies=("wget" "tar" "grep" "pkill" )
+    local package_manager=""
+    local dependencies=()
+    local config_file="$BASE_DIR/.ark_server_manager_config"
 
+    # Detect the package manager
+    if command -v apt-get >/dev/null 2>&1; then
+        package_manager="apt-get"
+        dependencies=("wget" "tar" "grep" "libc6:i386" "libstdc++6:i386" "libncursesw6:i386" "python3" "libfreetype6:i386" "libfreetype6:amd64" "pkill")
+    elif command -v zypper >/dev/null 2>&1; then
+        package_manager="zypper"
+        dependencies=("wget" "tar" "grep" "libX11-6-32bit" "libX11-devel-32bit" "gcc-32bit" "libexpat1-32bit" "libXext6-32bit" "python3" "pkill" "libfreetype6" "libfreetype6-32bit")
+    elif command -v dnf >/dev/null 2>&1; then
+        package_manager="dnf"
+        dependencies=("wget" "tar" "grep" "glibc-devel.i686" "ncurses-devel.i686" "libstdc++-devel.i686" "python3" "freetype" "procps-ng")
+    elif command -v pacman >/dev/null 2>&1; then
+        package_manager="pacman"
+        dependencies=("wget" "tar" "grep" "lib32-libx11" "gcc-multilib" "lib32-expat" "lib32-libxext" "python" "freetype2")
+    else
+        echo -e "${RED}Error: No supported package manager found on this system.${RESET}"
+        exit 1
+    fi
+
+    # Check for missing dependencies
     for cmd in "${dependencies[@]}"; do
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            missing+=("$cmd")
+        if [ "$package_manager" == "apt-get" ] && [[ "$cmd" == *:i386* || "$cmd" == *:amd64* ]]; then
+            if ! dpkg --get-selections | grep -q "${cmd%%:*}" && ! ldconfig -p | grep -q "${cmd}"; then
+                missing+=("$cmd")
+            fi
+        elif [ "$package_manager" == "zypper" ]; then
+            if ! rpm -q "${cmd}" >/dev/null 2>&1 && ! command -v "${cmd}" >/dev/null 2>&1; then
+                missing+=("$cmd")
+            fi
+        elif [ "$package_manager" == "dnf" ]; then
+            if ! rpm -q "${cmd}" >/dev/null 2>&1 && ! command -v "${cmd}" >/dev/null 2>&1; then
+                missing+=("$cmd")
+            fi
+        elif [ "$package_manager" == "pacman" ]; then
+            if ! pacman -Qi "${cmd}" >/dev/null 2>&1 && ! ldconfig -p | grep -q "${cmd}"; then
+                missing+=("$cmd")
+            fi
+        elif [ "$cmd" == "pkill" ]; then
+            if ! command -v pkill >/dev/null 2>&1; then
+                missing+=("procps")
+            fi
+        else
+            if ! command -v "${cmd}" >/dev/null 2>&1; then
+                missing+=("$cmd")
+            fi
         fi
     done
 
+    # Report missing dependencies and ask to continue
     if [ ${#missing[@]} -ne 0 ]; then
-        echo -e "${RED}Error: The following required commands are missing: ${missing[*]}${RESET}"
-        echo "Please install them and try again."
-        exit 1
+        # Check if the user has chosen to suppress warnings
+        if [ -f "$config_file" ] && grep -q "SUPPRESS_DEPENDENCY_WARNINGS=true" "$config_file"; then
+            echo -e "${YELLOW}Continuing despite missing dependencies (warnings suppressed)...${RESET}"
+            return
+        fi
+
+        echo -e "${RED}Warning: The following required packages are missing: ${missing[*]}${RESET}"
+        echo -e "${CYAN}Please install them using the appropriate command for your system:${RESET}"
+        case $package_manager in
+            "apt-get")
+                echo -e "${MAGENTA}sudo dpkg --add-architecture i386${RESET}"
+                echo -e "${MAGENTA}sudo apt update${RESET}"
+                echo -e "${MAGENTA}sudo apt-get install ${YELLOW}${missing[*]}${RESET}"
+                ;;
+            "zypper")
+                echo -e "${MAGENTA}sudo zypper install ${YELLOW}${missing[*]}${RESET}"
+                ;;
+            "dnf")
+                echo -e "${MAGENTA}sudo dnf install ${YELLOW}${missing[*]}${RESET}"
+                ;;
+            "pacman")
+                echo -e "${BLUE}For Arch Linux users:${RESET}"
+                echo -e "${CYAN}1. Edit the pacman configuration file:${RESET}"
+                echo -e "   ${MAGENTA}sudo nano /etc/pacman.conf${RESET}"
+                echo
+                echo -e "${CYAN}2. Find and uncomment the following lines to enable the multilib repository:${RESET}"
+                echo -e "   ${GREEN}[multilib]${RESET}"
+                echo -e "   ${GREEN}Include = /etc/pacman.d/mirrorlist${RESET}"
+                echo
+                echo -e "${CYAN}3. Save the file and exit the editor${RESET}"
+                echo
+                echo -e "${CYAN}4. Update the package database:${RESET}"
+                echo -e "   ${MAGENTA}sudo pacman -Sy${RESET}"
+                echo
+                echo -e "${CYAN}5. Install the missing packages:${RESET}"
+                echo -e "   ${MAGENTA}sudo pacman -S ${YELLOW}${missing[*]}${RESET}"
+                ;;
+        esac
+
+        echo -e "${YELLOW}Continue anyway?${RESET} ${RED}(not recommended) [y/N]${RESET}"
+        read -r response
+        if [[ ! $response =~ ^[Yy]$ ]]; then
+            echo -e "${RED}Exiting due to missing dependencies.${RESET}"
+            exit 1
+        fi
+
+        echo -e "${YELLOW}Do you want to suppress this warning in the future? [y/N]${RESET}"
+        read -r suppress_response
+        if [[ $suppress_response =~ ^[Yy]$ ]]; then
+            echo "SUPPRESS_DEPENDENCY_WARNINGS=true" >> "$config_file"
+            echo -e "${GREEN}Dependency warnings will be suppressed in future runs.${RESET}"
+        fi
+
+        echo -e "${YELLOW}Continuing despite missing dependencies...${RESET}"
     fi
 }
-
-# Check dependencies before proceeding
-check_dependencies
-
-export LC_ALL=C.UTF-8
-export LANG=C.UTF-8
-export LANGUAGE=C.UTF-8
 
 # Base directory for all instances
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,6 +160,9 @@ is_server_running() {
 
 # Function to install or update the base server
 install_base_server() {
+
+    # Check dependencies before proceeding
+    check_dependencies
     echo -e "${CYAN}Installing/updating base server...${RESET}"
 
     # Create necessary directories
@@ -507,16 +601,16 @@ delete_instance() {
                 echo -e "${YELLOW}Other instances are still running. Not removing the Config symlink to avoid affecting other servers.${RESET}"
             else
                 # Remove the symlink and restore the original configuration directory
-                rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+                rm -f "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" || true
                 if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" ]; then
-                    mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer"
+                    mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" || true
                 fi
             fi
 
             # Deleting the instance directory and save games
-            rm -rf "$INSTANCES_DIR/$instance"
-            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/$instance"
-            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance"
+            rm -rf "$INSTANCES_DIR/$instance" || true
+            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/$instance" || true
+            rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance" || true
             echo -e "${GREEN}Instance '$instance' has been deleted.${RESET}"
         else
             echo -e "${YELLOW}Deletion cancelled.${RESET}"
