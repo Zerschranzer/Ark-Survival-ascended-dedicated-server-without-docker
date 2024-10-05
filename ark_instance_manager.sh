@@ -18,6 +18,23 @@ RESET='\e[0m'
 # Signal handling to inform the user and kill processes
 trap 'echo -e "${RED}Script interrupted. Servers that have already started will continue running.${RESET}"; pkill -P $$; exit 1' SIGINT SIGTERM
 
+# Base directory for all instances
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+INSTANCES_DIR="$BASE_DIR/instances"
+
+# Define the base paths as variables
+STEAMCMD_DIR="$BASE_DIR/steamcmd"
+SERVER_FILES_DIR="$BASE_DIR/server-files"
+PROTON_VERSION="GE-Proton9-5"
+PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
+RCONCLI_VERSION="0.10.3"
+RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
+
+# Define URLs for SteamCMD, Proton, and RCON CLI
+STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
+PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
+RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
+
 check_dependencies() {
     local missing=()
     local package_manager=""
@@ -130,22 +147,8 @@ check_dependencies() {
     fi
 }
 
-# Base directory for all instances
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTANCES_DIR="$BASE_DIR/instances"
-
-# Define the base paths as variables
-STEAMCMD_DIR="$BASE_DIR/steamcmd"
-SERVER_FILES_DIR="$BASE_DIR/server-files"
-PROTON_VERSION="GE-Proton9-5"
-PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
-RCONCLI_VERSION="0.10.3"
-RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
-
-# Define URLs for SteamCMD, Proton, and RCON CLI
-STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
-PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
-RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
+# Check dependencies before proceeding
+check_dependencies
 
 # Function to check if a server is running
 is_server_running() {
@@ -160,9 +163,6 @@ is_server_running() {
 
 # Function to install or update the base server
 install_base_server() {
-
-    # Check dependencies before proceeding
-    check_dependencies
     echo -e "${CYAN}Installing/updating base server...${RESET}"
 
     # Create necessary directories
