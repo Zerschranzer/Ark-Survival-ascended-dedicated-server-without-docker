@@ -466,7 +466,7 @@ show_running_instances() {
             # Check if the server is running
             if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
                 echo -e "${GREEN}$instance_name is running${RESET}"
-                ((running_count++))
+                ((running_count++)) || true
             else
                 echo -e "${RED}$instance_name is not running${RESET}"
             fi
