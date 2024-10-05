@@ -435,7 +435,7 @@ start_server() {
         -mods="$MOD_IDS" \
         > "$INSTANCES_DIR/$instance/server.log" 2>&1 &
 
-    echo -e "${GREEN}Server started for instance: $instance${RESET}"
+    echo -e "${GREEN}Server started for instance: $instance. It should be fully operational in approximately 60 seconds.${RESET}"
 }
 
 # Function to stop the server
@@ -455,20 +455,28 @@ stop_server() {
 # Function to start RCON CLI
 start_rcon_cli() {
     local instance=$1
+        if ! is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is not running.${RESET}"
+        return 0
+    fi
+
     load_instance_config "$instance" || return 1
 
     echo -e "${CYAN}Starting RCON CLI for instance: $instance${RESET}"
-    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD"
+    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" || true
 }
 
 # Function to change map
 change_map() {
     local instance=$1
     load_instance_config "$instance" || return 1
-
     echo -e "${CYAN}Current map: $MAP_NAME${RESET}"
-    echo -e "${CYAN}Enter the new map name:${RESET}"
+    echo -e "${CYAN}Enter the new map name (or type 'cancel' to abort):${RESET}"
     read -r new_map_name
+    if [[ "$new_map_name" == "cancel" ]]; then
+        echo -e "${YELLOW}Map change aborted.${RESET}"
+        return 0
+    fi
     sed -i "s/MapName=.*/MapName=$new_map_name/" "$INSTANCES_DIR/$instance/instance_config.ini"
     echo -e "${GREEN}Map changed to $new_map_name. Restart the server for changes to take effect.${RESET}"
 }
@@ -477,10 +485,13 @@ change_map() {
 change_mods() {
     local instance=$1
     load_instance_config "$instance" || return 1
-
     echo -e "${CYAN}Current mods: $MOD_IDS${RESET}"
-    echo -e "${CYAN}Enter the new mod IDs (comma-separated):${RESET}"
+    echo -e "${CYAN}Enter the new mod IDs (comma-separated, or type 'cancel' to abort):${RESET}"
     read -r new_mod_ids
+    if [[ "$new_mod_ids" == "cancel" ]]; then
+        echo -e "${YELLOW}Mod change aborted.${RESET}"
+        return 0
+    fi
     sed -i "s/ModIDs=.*/ModIDs=$new_mod_ids/" "$INSTANCES_DIR/$instance/instance_config.ini"
     echo -e "${GREEN}Mods changed to $new_mod_ids. Restart the server for changes to take effect.${RESET}"
 }
@@ -620,6 +631,53 @@ delete_instance() {
     fi
 }
 
+# Function to change instance name
+change_instance_name() {
+    local instance=$1
+    load_instance_config "$instance" || return 1
+
+    echo -e "${CYAN}Enter the new name for instance '$instance' (or type 'cancel' to abort):${RESET}"
+    read -r new_instance_name
+
+    # Validation
+    if [ "$new_instance_name" = "cancel" ]; then
+        echo -e "${YELLOW}Instance renaming cancelled.${RESET}"
+        return
+    elif [ -z "$new_instance_name" ]; then
+        echo -e "${RED}Instance name cannot be empty.${RESET}"
+        return 1
+    elif [ -d "$INSTANCES_DIR/$new_instance_name" ]; then
+        echo -e "${RED}An instance with the name '$new_instance_name' already exists.${RESET}"
+        return 1
+    fi
+
+    # Stop the server if running
+    if is_server_running "$instance"; then
+        echo -e "${CYAN}Stopping running server for instance '$instance' before renaming...${RESET}"
+        stop_server "$instance"
+    fi
+
+    # Rename instance directory
+    mv "$INSTANCES_DIR/$instance" "$INSTANCES_DIR/$new_instance_name" || {
+        echo -e "${RED}Failed to rename instance directory.${RESET}"
+        return 1
+    }
+
+    # Rename save directories if they exist
+    if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/$instance" ]; then
+        mv "$SERVER_FILES_DIR/ShooterGame/Saved/$instance" "$SERVER_FILES_DIR/ShooterGame/Saved/$new_instance_name" || true
+    fi
+
+    if [ -d "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance" ]; then
+        mv "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance" "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$new_instance_name" || true
+    fi
+
+    # Update SaveDir in the instance configuration
+    sed -i "s/^SaveDir=.*/SaveDir=$new_instance_name/" "$INSTANCES_DIR/$new_instance_name/instance_config.ini"
+
+    echo -e "${GREEN}Instance renamed from '$instance' to '$new_instance_name'.${RESET}"
+}
+
 # Main menu using 'select'
 main_menu() {
     while true; do
@@ -635,6 +693,7 @@ main_menu() {
             "Stop All Instances"
             "Show Running Instances"
             "Delete Instance"
+            "Change Instance Name"
             "Exit"
         )
 
@@ -678,6 +737,12 @@ main_menu() {
                     break
                     ;;
                 9)
+                    if select_instance; then
+                        change_instance_name "$selected_instance"
+                    fi
+                    break
+                    ;;
+                10)
                     echo -e "${GREEN}Exiting ARK Server Manager. Goodbye!${RESET}"
                     exit 0
                     ;;
@@ -705,6 +770,7 @@ manage_instance() {
             "Change Map"
             "Change Mods"
             "Check Server Status"
+            "Change Instance Name"
             "Back to Main Menu"
         )
 
@@ -745,6 +811,11 @@ manage_instance() {
                     break
                     ;;
                 9)
+                    change_instance_name "$instance"
+                    instance=$new_instance_name  # Update the instance variable
+                    break
+                    ;;
+                10)
                     return
                     ;;
                 *)
