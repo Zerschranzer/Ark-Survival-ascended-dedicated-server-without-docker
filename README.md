@@ -99,21 +99,40 @@ The script supports various command-line arguments for quick actions and automat
 2. Enter a unique name for the instance
 3. Edit the instance configuration file in your default text editor
 
-### Instance Configuration
+## Instance Configuration
 
-Each instance has its own configuration file (`instance_config.ini`) with the following settings:
+Each server instance in this manager is highly customizable, allowing for unique configurations to suit different gameplay needs.
 
-- ServerName
-- ServerPassword
-- ServerAdminPassword
-- MaxPlayers
-- MapName
-- RCONPort
-- QueryPort
-- Port
-- ModIDs
-- SaveDir
-- ClusterID
+### Instance-Specific Files
+
+1. **`instance_config.ini`**: The main configuration file for each instance, containing the following settings:
+   - ServerName
+   - ServerPassword
+   - ServerAdminPassword
+   - MaxPlayers
+   - MapName
+   - RCONPort
+   - QueryPort
+   - Port
+   - ModIDs
+   - SaveDir
+   - ClusterID
+
+2. **`GameUserSettings.ini`**: Located in the instance's directory within the `instances` folder. This file allows you to configure game-specific settings for each instance separately.
+
+3. **`Game.ini`** (Optional): You can add this file to the instance directory for additional game settings. If present, it will be applied when starting the instance.
+
+### Configuration Application
+
+- The script creates symlinks to ensure that the correct configuration files are loaded for each instance.
+- There's a 30-second delay before starting each instance. This delay allows time for the proper application of configurations, especially when switching between different instances.
+
+### Key Points:
+- Each instance can have unique settings in `instance_config.ini`, `GameUserSettings.ini`, and optionally `Game.ini`.
+- The use of symlinks and the start delay ensure that the correct configurations are always applied to the right instance.
+- This setup provides maximum flexibility, allowing you to run multiple server instances with varied configurations on the same machine.
+
+To modify an instance's configuration, edit the respective files in the instance's directory. The changes will be applied the next time you start the instance.
 
 ### Starting and Stopping Servers
 
