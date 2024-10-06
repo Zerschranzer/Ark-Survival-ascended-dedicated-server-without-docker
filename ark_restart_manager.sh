@@ -19,10 +19,10 @@ announcement_messages=(
     "Server restart in 3 minutes"
     "Server restart in 10 seconds"
 )
-# Time to wait after issuing 'saveworld' (in seconds)
+# Time to wait after issuing 'saveworld' (in seconds). Give the server enoungh time to save the world before you stop it
 save_wait_time=20
 
-# Time to wait between starting instances (in seconds)
+# Time to wait between starting instances (in seconds). The server needs enough time to load the config, bfore the next instance starts.
 start_wait_time=30
 
 # --------------------------------------------- CONFIGURATION ENDS HERE --------------------------------------------- #
