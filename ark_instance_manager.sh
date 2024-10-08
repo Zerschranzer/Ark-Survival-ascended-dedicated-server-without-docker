@@ -267,7 +267,7 @@ edit_instance_config() {
         mkdir -p "$INSTANCES_DIR/$instance"
     fi
 
-      # Create the config directory if it doesn't exist
+      # Create the Config directory if it doesn't exist
     if [ ! -d "$INSTANCES_DIR/$instance/Config" ]; then
         mkdir -p "$INSTANCES_DIR/$instance/Config"
     fi
@@ -293,7 +293,7 @@ EOF
 
      # Create an empty Game.ini, if it doesnt exist
     if [ ! -f "$game_ini_file" ]; then
-        touch "$game_ini_file"  # Leere Game.ini erstellen
+        touch "$game_ini_file" 
         echo -e "${GREEN}Empty Game.ini for '$instance' Created. Optional: Edit it for your needs${RESET}"
     fi
 
