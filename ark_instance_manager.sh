@@ -294,7 +294,7 @@ EOF
 
      # Create an empty Game.ini, if it doesnt exist
     if [ ! -f "$game_ini_file" ]; then
-        touch "$game_ini_file" 
+        touch "$game_ini_file"
         echo -e "${GREEN}Empty Game.ini for '$instance' Created. Optional: Edit it for your needs${RESET}"
     fi
 
@@ -620,7 +620,7 @@ delete_instance() {
         read -p "Are you sure you want to proceed? (y/N): " confirm
         if [[ $confirm =~ ^[Yy]$ ]]; then
             # Load instance config
-            load_instance_config "$instance"
+            load_instance_config "$instance" ||true
 
             # Stop instance if it's running
             if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
@@ -698,6 +698,92 @@ change_instance_name() {
 
     echo -e "${GREEN}Instance renamed from '$instance' to '$new_instance_name'.${RESET}"
 }
+
+# Function to edit GameUserSettins.ini
+edit_gameusersettings() {
+    local instance=$1
+    local file_path="$INSTANCES_DIR/$instance/Config/GameUserSettings.ini"
+
+    #Check if server is running
+    if is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is running. Stop it to edit config${RESET}"
+        return 0
+    fi
+    if [ ! -f "$file_path" ]; then
+        echo -e "${RED}Error: No GameUserSettings.ini found. Start the server once to generate one or place your own in the instances/$instance/Config folder.${RESET}"
+        return
+    fi
+    select_editor "$file_path"
+}
+
+# Function to edit Game.ini
+edit_game_ini() {
+    local instance=$1
+    local file_path="$INSTANCES_DIR/$instance/Config/Game.ini"
+
+    #Check if server is running
+    if is_server_running "$instance"; then
+        echo -e "${YELLOW}Server for instance $instance is running. Stop it to edit config${RESET}"
+        return 0
+    fi
+    if [ ! -f "$file_path" ]; then
+        echo -e "${YELLOW}Game.ini not found for instance '$instance'. Creating a new one.${RESET}"
+        touch "$file_path"
+    fi
+    select_editor "$file_path"
+}
+
+#Function to select editor and open a file in editor
+select_editor() {
+local file_path="$1"
+
+# Open the file in the default text editor
+    if [ -n "$EDITOR" ]; then
+        "$EDITOR" "$file_path"
+    elif command -v nano >/dev/null 2>&1; then
+        nano "$file_path"
+    elif command -v vim >/dev/null 2>&1; then
+        vim "$file_path"
+    else
+        echo -e "${RED}No suitable text editor found. Please edit $file_path manually.${RESET}"
+    fi
+}
+
+# Menu to edit configuration files
+edit_configuration_menu() {
+    local instance=$1
+    echo -e "${CYAN}Choose configuration to edit:${RESET}"
+    options=(
+        "Instance Configuration"
+        "GameUserSettings.ini"
+        "Game.ini"
+        "Back"
+    )
+    PS3="Please select an option: "
+    select opt in "${options[@]}"; do
+        case "$REPLY" in
+            1)
+                edit_instance_config "$instance"
+                break
+                ;;
+            2)
+                edit_gameusersettings "$instance"
+                break
+                ;;
+            3)
+                edit_game_ini "$instance"
+                break
+                ;;
+            4)
+                return
+                ;;
+            *)
+                echo -e "${RED}Invalid option selected.${RESET}"
+                ;;
+        esac
+    done
+}
+
 
 # Main menu using 'select'
 main_menu() {
@@ -816,7 +902,7 @@ manage_instance() {
                     break
                     ;;
                 5)
-                    edit_instance_config "$instance"
+                    edit_configuration_menu "$instance"
                     break
                     ;;
                 6)
