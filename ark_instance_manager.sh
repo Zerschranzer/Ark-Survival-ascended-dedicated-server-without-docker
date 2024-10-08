@@ -125,6 +125,7 @@ check_dependencies() {
                 echo -e "   ${MAGENTA}sudo pacman -Sy${RESET}"
                 echo
                 echo -e "${CYAN}5. Install the missing packages:${RESET}"
+                echo
                 echo -e "   ${MAGENTA}sudo pacman -S ${YELLOW}${missing[*]}${RESET}"
                 ;;
         esac
@@ -259,10 +260,16 @@ list_instances() {
 edit_instance_config() {
     local instance=$1
     local config_file="$INSTANCES_DIR/$instance/instance_config.ini"
+    local game_ini_file="$INSTANCES_DIR/$instance/Config/Game.ini"
 
     # Create instance directory if it doesn't exist
     if [ ! -d "$INSTANCES_DIR/$instance" ]; then
         mkdir -p "$INSTANCES_DIR/$instance"
+    fi
+
+      # Create the config directory if it doesn't exist
+    if [ ! -d "$INSTANCES_DIR/$instance/Config" ]; then
+        mkdir -p "$INSTANCES_DIR/$instance/Config"
     fi
 
     # Create config file if it doesn't exist
@@ -282,6 +289,12 @@ SaveDir=$instance
 ClusterID=
 EOF
         chmod 600 "$config_file"  # Set file permissions to be owner-readable and writable
+    fi
+
+     # Create an empty Game.ini, if it doesnt exist
+    if [ ! -f "$game_ini_file" ]; then
+        touch "$game_ini_file"  # Leere Game.ini erstellen
+        echo -e "${GREEN}Empty Game.ini for '$instance' Created. Optional: Edit it for your needs${RESET}"
     fi
 
     # Open the config file in the default text editor
