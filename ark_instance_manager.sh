@@ -129,7 +129,7 @@ check_dependencies() {
                 ;;
         esac
 
-        echo
+        echo -e "\n"
         echo -e "${YELLOW}Continue anyway?${RESET} ${RED}(not recommended)${RESET} ${YELLOW}[y/N]${RESET}"
         read -r response
         if [[ ! $response =~ ^[Yy]$ ]]; then
