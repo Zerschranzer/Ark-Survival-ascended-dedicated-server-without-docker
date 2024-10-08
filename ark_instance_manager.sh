@@ -125,7 +125,6 @@ check_dependencies() {
                 echo -e "   ${MAGENTA}sudo pacman -Sy${RESET}"
                 echo
                 echo -e "${CYAN}5. Install the missing packages:${RESET}"
-                echo
                 echo -e "   ${MAGENTA}sudo pacman -S ${YELLOW}${missing[*]}${RESET}"
                 ;;
         esac
@@ -137,6 +136,7 @@ check_dependencies() {
             exit 1
         fi
 
+        echo
         echo -e "${YELLOW}Do you want to suppress this warning in the future? [y/N]${RESET}"
         read -r suppress_response
         if [[ $suppress_response =~ ^[Yy]$ ]]; then
