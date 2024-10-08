@@ -614,20 +614,19 @@ delete_instance() {
         fi
         instance=$selected_instance
     fi
-
     if [ -d "$INSTANCES_DIR/$instance" ]; then
         echo -e "${RED}Warning: This will permanently delete the instance '$instance' and all its data.${RESET}"
-        read -p "Are you sure you want to proceed? (y/N): " confirm
-        if [[ $confirm =~ ^[Yy]$ ]]; then
-            # Load instance config
-            load_instance_config "$instance" ||true
+        echo "Type CONFIRM to delete the instance, or cancel to abort"
+        read -p "> " response
 
+        if [[ $response == "CONFIRM" ]]; then
+            # Load instance config
+            load_instance_config "$instance"
             # Stop instance if it's running
             if pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; then
                 echo -e "${CYAN}Stopping instance '$instance'...${RESET}"
                 stop_server "$instance"
             fi
-
             # Check if other instances are running
             if pgrep -f "ArkAscendedServer.exe" > /dev/null; then
                 echo -e "${YELLOW}Other instances are still running. Not removing the Config symlink to avoid affecting other servers.${RESET}"
@@ -638,14 +637,15 @@ delete_instance() {
                     mv "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer.bak" "$SERVER_FILES_DIR/ShooterGame/Saved/Config/WindowsServer" || true
                 fi
             fi
-
             # Deleting the instance directory and save games
             rm -rf "$INSTANCES_DIR/$instance" || true
             rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/$instance" || true
             rm -rf "$SERVER_FILES_DIR/ShooterGame/Saved/SavedArks/$instance" || true
             echo -e "${GREEN}Instance '$instance' has been deleted.${RESET}"
-        else
+        elif [[ $response == "cancel" ]]; then
             echo -e "${YELLOW}Deletion cancelled.${RESET}"
+        else
+            echo -e "${YELLOW}Invalid response. Deletion cancelled.${RESET}"
         fi
     else
         echo -e "${RED}Instance '$instance' does not exist.${RESET}"
