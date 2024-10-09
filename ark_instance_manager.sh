@@ -616,7 +616,7 @@ delete_instance() {
     fi
     if [ -d "$INSTANCES_DIR/$instance" ]; then
         echo -e "${RED}Warning: This will permanently delete the instance '$instance' and all its data.${RESET}"
-        echo "Type CONFIRM to delete the instance, or cancel to abort"
+        echo "Type CONFIRM to delete the instance '$instance', or cancel to abort"
         read -p "> " response
 
         if [[ $response == "CONFIRM" ]]; then
