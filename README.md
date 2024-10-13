@@ -16,15 +16,17 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
 
 ## System Requirements
 
-- A Linux system with one of the following package managers:
-  - apt-get (Debian/Ubuntu)
-  - zypper (OpenSUSE)
-  - dnf (Fedora)
-  - pacman (Arch Linux)
-- Sudo rights or root access
 - **At least 4 CPU cores** (6-8 recommended for optimal performance)
 - **At least 16 GB of RAM** (for stable performance)
 - Sufficient disk space for ARK server files and instances
+- Sudo rights or root access
+    
+  - **A Linux system with one of the following package managers:**
+    - apt-get (Debian/Ubuntu)
+    - zypper (OpenSUSE)
+    - dnf (Fedora)
+    - pacman (Arch Linux)
+
 
 ## Installation and Setup
 
