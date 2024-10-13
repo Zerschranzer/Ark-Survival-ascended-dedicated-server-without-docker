@@ -17,7 +17,7 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
 ## System Requirements
 
 - **At least 4 CPU cores** (6-8 recommended for optimal performance)
-- **At least 16 GB of RAM** (for stable performance)
+- **At least 16 GB of RAM** (8GB will result in crash)
 - Sufficient disk space for ARK server files and instances
 - Sudo rights or root access
     
