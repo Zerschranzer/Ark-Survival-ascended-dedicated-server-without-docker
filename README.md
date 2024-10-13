@@ -22,6 +22,8 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
   - dnf (Fedora)
   - pacman (Arch Linux)
 - Sudo rights or root access
+- **At least 4 CPU cores** (6-8 recommended for optimal performance)
+- **At least 16 GB of RAM** (for stable performance)
 - Sufficient disk space for ARK server files and instances
 
 ## Installation and Setup
