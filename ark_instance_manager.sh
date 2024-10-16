@@ -286,6 +286,8 @@ RCONPort=27020
 QueryPort=27015
 Port=7777
 ModIDs=
+#When changing SaveDir, make sure to give it a unique name, as this can otherwise affect the stop server function.
+#Do not use umlauts, spaces, or special characters.
 SaveDir=$instance
 ClusterID=
 EOF
@@ -538,7 +540,6 @@ start_all_instances() {
                 echo -e "${YELLOW}Instance $instance_name is already running. Skipping...${RESET}"
                 continue
             fi
-            echo -e "${CYAN}Starting instance: $instance_name${RESET}"
             start_server "$instance_name"
             # Waiting 30 seconds before starting the next instance
             echo -e "${YELLOW}Waiting 30 seconds before starting the next instance...${RESET}"
@@ -558,7 +559,6 @@ stop_all_instances() {
                 echo -e "${YELLOW}Instance $instance_name is not running. Skipping...${RESET}"
                 continue
             fi
-            echo -e "${CYAN}Stopping instance: $instance_name${RESET}"
             stop_server "$instance_name"
         fi
     done
