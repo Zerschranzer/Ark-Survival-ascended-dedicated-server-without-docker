@@ -99,9 +99,12 @@ The script supports various command-line arguments for quick actions and automat
 
 ### Creating a New Instance
 
-1. From the main menu, select "Create New Instance"
-2. Enter a unique name for the instance
-3. Edit the instance configuration file in your default text editor
+1. From the main menu, select "Create New Instance."
+2. **Ensure that each instance has a unique name.** When naming instances, avoid naming them similarly, such as "instance" and "instance1." This is important because the "Stop instance" function searches for processes containing the instance name in the start parameters. If the names are too similar, stopping one instance might unintentionally stop another. To prevent this, choose distinct names like "instance1" and "instance2." This ensures that each instance will be managed separately, and no instances will be stopped by mistake.
+   
+   _Note: I am currently looking for a solution to this issue, but it is challenging since Proton treats the instances as multiple child processes._ 
+
+3. Edit the instance configuration file in your default text editor.
 
 ## Instance Configuration
 
