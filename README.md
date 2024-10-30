@@ -195,7 +195,6 @@ The Restart Manager (`ark_restart_manager.sh`) is a separate script that manages
    - `instances`: List of your server instances
    - `announcement_times`: Times for restart announcements (in seconds before restart)
    - `announcement_messages`: Messages for each announcement time
-   - `save_wait_time`: Wait time after saving the world
    - `start_wait_time`: Wait time between starting instances
 
 4. Set up a cron job to run the Restart Manager regularly:
