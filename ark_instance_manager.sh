@@ -470,6 +470,11 @@ stop_server() {
     fi
 
     load_instance_config "$instance" || return 1
+
+    echo -e "${GREEN}Save world for instance $instance...${RESET}"
+    send_rcon_command "$instance" "SaveWorld" || true
+    sleep 3
+
     echo -e "${CYAN}Stopping server for instance: $instance${RESET}"
     pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" || true
     echo -e "${GREEN}Server stopped for instance: $instance${RESET}"
