@@ -19,8 +19,6 @@ announcement_messages=(
     "Server restart in 3 minutes"
     "Server restart in 10 seconds"
 )
-# Time to wait after issuing 'saveworld' (in seconds). Give the server enoungh time to save the world before you stop it
-save_wait_time=20
 
 # Time to wait between starting instances (in seconds). The server needs enough time to load the config, bfore the next instance starts.
 start_wait_time=30
@@ -102,35 +100,21 @@ announce_restart() {
     done
 }
 
-# Function to save the game world for each instance
-save_world() {
-    for instance in "${instances[@]}"; do
-        log_message "Saving world for instance $instance..."
-        $ark_manager "$instance" send_rcon "saveworld"
-        log_message "Waiting $save_wait_time seconds to ensure world is saved..."
-        sleep $save_wait_time
-    done
-}
-
 # ---------- MAIN SCRIPT ----------
 log_message "Starting ARK server restart process."
 
 # 1. Announce the restart with warning messages
 announce_restart
 
-# 2. Save the world for each instance and wait before proceeding
-save_world
-
-# 3. Stop the server instances one by one (no wait time between stops)
+# 2. Stop the server instances one by one (no wait time between stops)
 manage_instances "stop" ""
 
-# 4. Update the server
+# 3. Update the server
 log_message "Updating all instances..."
 $ark_manager update
 log_message "Update completed."
 
-# 5. Start the server instances one by one (with wait time between starts)
+# 4. Start the server instances one by one (with wait time between starts)
 manage_instances "start" "$start_wait_time"
 
 log_message "ARK servers have been successfully restarted and updated."
-
