@@ -152,6 +152,73 @@ check_dependencies() {
 # Check dependencies before proceeding
 check_dependencies
 
+# This function searches all instance_config.ini files in the $INSTANCES_DIR folder
+# and collects the ports into arrays
+check_for_duplicate_ports() {
+    declare -A port_occurrences
+    declare -A rcon_occurrences
+    declare -A query_occurrences
+
+    local duplicates_found=false
+
+    # Iterate over all instance folders
+    for instance_dir in "$INSTANCES_DIR"/*; do
+        if [ -d "$instance_dir" ]; then
+            local config_file="$instance_dir/instance_config.ini"
+            if [ -f "$config_file" ]; then
+                local instance_name
+                instance_name=$(basename "$instance_dir")
+
+                # Extract ports from the config
+                local game_port rcon_port query_port
+                game_port=$(grep -E "^Port=" "$config_file"      | cut -d= -f2- | xargs)
+                rcon_port=$(grep -E "^RCONPort=" "$config_file"   | cut -d= -f2- | xargs)
+                query_port=$(grep -E "^QueryPort=" "$config_file" | cut -d= -f2- | xargs)
+
+                # Ignore entries if they are empty
+                [ -z "$game_port" ]  && game_port="NULL"
+                [ -z "$rcon_port" ]  && rcon_port="NULL"
+                [ -z "$query_port" ] && query_port="NULL"
+
+                # Add ports to the dictionary; Key = Port, Value = Instance name
+                # If the port is already in use, log the conflict
+                if [ "$game_port" != "NULL" ]; then
+                    if [ -n "${port_occurrences[$game_port]}" ]; then
+                        echo -e "${RED}Conflict: Game port $game_port is used by both '${port_occurrences[$game_port]}' and '$instance_name'.${RESET}"
+                        duplicates_found=true
+                    else
+                        port_occurrences[$game_port]="$instance_name"
+                    fi
+                fi
+
+                if [ "$rcon_port" != "NULL" ]; then
+                    if [ -n "${rcon_occurrences[$rcon_port]}" ]; then
+                        echo -e "${RED}Conflict: RCON port $rcon_port is used by both '${rcon_occurrences[$rcon_port]}' and '$instance_name'.${RESET}"
+                        duplicates_found=true
+                    else
+                        rcon_occurrences[$rcon_port]="$instance_name"
+                    fi
+                fi
+
+                if [ "$query_port" != "NULL" ]; then
+                    if [ -n "${query_occurrences[$query_port]}" ]; then
+                        echo -e "${RED}Conflict: Query port $query_port is used by both '${query_occurrences[$query_port]}' and '$instance_name'.${RESET}"
+                        duplicates_found=true
+                    else
+                        query_occurrences[$query_port]="$instance_name"
+                    fi
+                fi
+            fi
+        fi
+    done
+
+    if [ "$duplicates_found" = true ]; then
+        echo -e "${RED}Port duplicates were found. Please correct the ports in the instance_config.ini files.${RESET}"
+        echo -e "${RED}Server will not start.${RESET}"
+        exit 1
+    fi
+}
+
 # Function to check if a server is running
 is_server_running() {
     local instance=$1
@@ -286,6 +353,7 @@ RCONPort=27020
 QueryPort=27015
 Port=7777
 ModIDs=
+CustomStartParameters=-NoBattlEye -crossplay -NoHangDetection
 #When changing SaveDir, make sure to give it a unique name, as this can otherwise affect the stop server function.
 #Do not use umlauts, spaces, or special characters.
 SaveDir=$instance
@@ -330,6 +398,7 @@ load_instance_config() {
         MOD_IDS=$(grep "ModIDs=" "$config_file" | cut -d= -f2-)
         SAVE_DIR=$(grep "SaveDir=" "$config_file" | cut -d= -f2-)
         CLUSTER_ID=$(grep "ClusterID=" "$config_file" | cut -d= -f2-)
+        CUSTOM_START_PARAMETERS=$(grep "CustomStartParameters=" "$config_file" | cut -d= -f2-)
     else
         echo -e "${RED}Configuration file for instance $instance not found.${RESET}"
         return 1
@@ -400,6 +469,9 @@ select_instance() {
 # Function to start the server
 start_server() {
     local instance=$1
+    #First, check if ports are assigned multiple times:
+    check_for_duplicate_ports
+
     if is_server_running "$instance"; then
         echo -e "${YELLOW}Server for instance $instance is already running.${RESET}"
         return 0
@@ -446,11 +518,7 @@ start_server() {
     # Start the server using the loaded configuration variables
     "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
         "$MAP_NAME?listen?SessionName=$SERVER_NAME?MaxPlayers=$MAX_PLAYERS?ServerPassword=$SERVER_PASSWORD?ServerAdminPassword=$ADMIN_PASSWORD?QueryPort=$QUERY_PORT?Port=$GAME_PORT?RCONEnabled=True?RCONPort=$RCON_PORT?AltSaveDirectoryName=$SAVE_DIR" \
-        -NoBattlEye \
-        -crossplay \
-        -NoHangDetection \
-        -useallavailablecores \
-        -nosteamclient \
+        $CUSTOM_START_PARAMETERS \
         -game \
         $cluster_params \
         -server \
@@ -738,6 +806,186 @@ edit_game_ini() {
     select_editor "$file_path"
 }
 
+# MENU ENTRY: Create a backup of an existing world
+menu_backup_world() {
+    echo -e "${CYAN}Please select an instance to create a backup from:${RESET}"
+    if select_instance; then
+        backup_instance_world "$selected_instance"
+    fi
+}
+
+# MENU ENTRY: Restore an existing backup into an instance
+menu_restore_world() {
+    echo -e "${CYAN}Please select the target instance to restore the backup to:${RESET}"
+    if select_instance; then
+        restore_backup_to_instance "$selected_instance"
+    fi
+}
+
+#Save a world's backup from an instance
+backup_instance_world() {
+    local instance=$1
+
+    # Check if the server is running
+    if is_server_running "$instance"; then
+        echo -e "${RED}The server for instance '$instance' is running. Stop it before creating a backup.${RESET}"
+        return 1
+    fi
+
+    # -- List all world folders in $SERVER_FILES_DIR/ShooterGame/Saved/$instance --
+    local worlds=()
+    local instance_dir="$SERVER_FILES_DIR/ShooterGame/Saved/$instance"
+    if [ ! -d "$instance_dir" ]; then
+        echo -e "${RED}Instance directory '$instance_dir' not found.${RESET}"
+        return 1
+    fi
+
+    # Collect folders typical for ARK worlds (e.g., TheIsland_WP, Ragnarok_WP, etc.)
+    for d in "$instance_dir"/*; do
+        [ -d "$d" ] && worlds+=("$(basename "$d")")
+    done
+
+    if [ ${#worlds[@]} -eq 0 ]; then
+        echo -e "${RED}No worlds found to backup (${instance_dir} is empty).${RESET}"
+        return 1
+    fi
+
+    echo -e "${CYAN}Select a world to back up:${RESET}"
+    PS3="Selection: "
+    select world_folder in "${worlds[@]}" "Cancel"; do
+        if [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${#worlds[@]}" ]; then
+            echo -e "${CYAN}Creating backup for world: $world_folder ...${RESET}"
+        elif [ "$REPLY" -eq $((${#worlds[@]} + 1)) ]; then
+            echo -e "${YELLOW}Operation canceled.${RESET}"
+            return 0
+        else
+            echo -e "${RED}Invalid selection.${RESET}"
+            continue
+        fi
+
+        # Create backup directory
+        local backups_dir="$BASE_DIR/backups"
+        mkdir -p "$backups_dir"
+
+        local timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+        local archive_name="${instance}_${world_folder}_${timestamp}.tar.gz"
+        local archive_path="$backups_dir/$archive_name"
+
+        tar -czf "$archive_path" -C "$instance_dir" "$world_folder"
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Backup successfully created: $archive_path${RESET}"
+        else
+            echo -e "${RED}Error creating the backup.${RESET}"
+        fi
+        break
+    done
+}
+
+#Load an existing backup (from the backups folder) into a target instance
+restore_backup_to_instance() {
+    local target_instance=$1
+
+    # Check if the server is running
+    if is_server_running "$target_instance"; then
+        echo -e "${RED}The server for instance '$target_instance' is running. Stop it before restoring a backup.${RESET}"
+        return 1
+    fi
+
+    local backups_dir="$BASE_DIR/backups"
+    if [ ! -d "$backups_dir" ]; then
+        echo -e "${RED}Backup directory '$backups_dir' does not exist.${RESET}"
+        return 1
+    fi
+
+    # Gather all *.tar.gz files in $backups_dir
+    local backup_files=()
+    while IFS= read -r -d $'\0' file; do
+        backup_files+=("$file")
+    done < <(find "$backups_dir" -maxdepth 1 -type f -name "*.tar.gz" -print0 | sort -z)
+
+    if [ ${#backup_files[@]} -eq 0 ]; then
+        echo -e "${RED}No backups found in '$backups_dir'.${RESET}"
+        return 1
+    fi
+
+    echo -e "${CYAN}Select a backup to load into instance '$target_instance':${RESET}"
+    PS3="Selection: "
+    select chosen_backup in "${backup_files[@]}" "Cancel"; do
+        if [ "$REPLY" -gt 0 ] && [ "$REPLY" -le "${#backup_files[@]}" ]; then
+            local backup_file="$chosen_backup"
+            echo -e "${CYAN}Selected backup: $backup_file${RESET}"
+        elif [ "$REPLY" -eq $((${#backup_files[@]} + 1)) ]; then
+            echo -e "${YELLOW}Operation canceled.${RESET}"
+            return 0
+        else
+            echo -e "${RED}Invalid selection.${RESET}"
+            continue
+        fi
+
+        # WARNING about overwriting
+        echo -e "${RED}WARNING: Restoring this backup may overwrite existing worlds.${RESET}"
+        echo -e "Type '${YELLOW}CONFIRM${RESET}' to proceed, or '${YELLOW}cancel${RESET}' to abort:"
+        read -r user_input
+        if [ "$user_input" != "CONFIRM" ]; then
+            echo -e "${YELLOW}Operation canceled.${RESET}"
+            return 0
+        fi
+
+        # Extract the backup into $SERVER_FILES_DIR/ShooterGame/Saved/$target_instance/
+        mkdir -p "$SERVER_FILES_DIR/ShooterGame/Saved/$target_instance"
+        echo -e "${CYAN}Extracting backup...${RESET}"
+        tar -xzf "$backup_file" -C "$SERVER_FILES_DIR/ShooterGame/Saved/$target_instance/"
+
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}Backup successfully loaded into instance '$target_instance'.${RESET}"
+        else
+            echo -e "${RED}Error extracting the backup.${RESET}"
+        fi
+
+        break
+    done
+}
+##Save a world's backup from an instance via CLI
+backup_instance_world_cli() {
+    local instance=$1
+    local world_folder=$2
+
+    # Check if the server is running
+    if is_server_running "$instance"; then
+        echo -e "${RED}The server for instance '$instance' is running. Please stop it first.${RESET}"
+        return 1
+    fi
+
+    local instance_dir="$SERVER_FILES_DIR/ShooterGame/Saved/$instance"
+    if [ ! -d "$instance_dir" ]; then
+        echo -e "${RED}Instance directory '$instance_dir' not found.${RESET}"
+        return 1
+    fi
+
+    local src_path="$instance_dir/$world_folder"
+    if [ ! -d "$src_path" ]; then
+        echo -e "${RED}World folder '$world_folder' does not exist (${src_path}).${RESET}"
+        return 1
+    fi
+
+    local backups_dir="$BASE_DIR/backups"
+    mkdir -p "$backups_dir"
+
+    local timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+    local archive_name="${instance}_${world_folder}_${timestamp}.tar.gz"
+    local archive_path="$backups_dir/$archive_name"
+
+    echo -e "${CYAN}Creating backup for '$world_folder' in instance '$instance'...${RESET}"
+    tar -czf "$archive_path" -C "$instance_dir" "$world_folder"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}Backup successfully created: $archive_path${RESET}"
+    else
+        echo -e "${RED}Error creating the backup.${RESET}"
+        return 1
+    fi
+}
+
+
 #Function to select editor and open a file in editor
 select_editor() {
 local file_path="$1"
@@ -797,16 +1045,18 @@ main_menu() {
         echo
 
         options=(
-            "Install/Update Base Server"
-            "List Instances"
-            "Create New Instance"
-            "Manage Instance"
-            "Start All Instances"
-            "Stop All Instances"
-            "Show Running Instances"
-            "Delete Instance"
-            "Change Instance Name"
-            "Exit"
+            "Install/Update Base Server"          # 1
+            "List Instances"                      # 2
+            "Create New Instance"                 # 3
+            "Manage Instance"                     # 4
+            "Change Instance Name"                # 5
+            "Delete Instance"                     # 6
+            "Start All Instances"                 # 7
+            "Stop All Instances"                  # 8
+            "Show Running Instances"              # 9
+            "Backup a World from Instance"        # 10
+            "Load Backup to Instance"             # 11
+            "Exit"                                # 12
         )
 
         PS3="Please choose an option: "
@@ -831,30 +1081,38 @@ main_menu() {
                     break
                     ;;
                 5)
-                    start_all_instances
-                    break
-                    ;;
-                6)
-                    stop_all_instances
-                    break
-                    ;;
-                7)
-                    show_running_instances
-                    break
-                    ;;
-                8)
-                    if select_instance; then
-                        delete_instance "$selected_instance"
-                    fi
-                    break
-                    ;;
-                9)
                     if select_instance; then
                         change_instance_name "$selected_instance"
                     fi
                     break
                     ;;
+                6)
+                    if select_instance; then
+                        delete_instance "$selected_instance"
+                    fi
+                    break
+                    ;;
+                7)
+                    start_all_instances
+                    break
+                    ;;
+                8)
+                    stop_all_instances
+                    break
+                    ;;
+                9)
+                    show_running_instances
+                    break
+                    ;;
                 10)
+                    menu_backup_world
+                    break
+                    ;;
+                11)
+                    menu_restore_world
+                    break
+                    ;;
+                12)
                     echo -e "${GREEN}Exiting ARK Server Manager. Goodbye!${RESET}"
                     exit 0
                     ;;
@@ -984,9 +1242,17 @@ else
                     rcon_command="${@:3}"  # Get all arguments from the third onwards
                     send_rcon_command "$instance_name" "$rcon_command"
                     ;;
+                backup)
+                    if [ $# -lt 3 ]; then
+                        echo -e "${RED}Usage: $0 $instance_name backup <world_folder>${RESET}"
+                        exit 1
+                    fi
+                    world_folder=$3
+                    backup_instance_world_cli "$instance_name" "$world_folder"
+                    ;;
                 *)
                     echo -e "${RED}Usage: $0 [update|start_all|stop_all|show_running|delete <instance_name>]${RESET}"
-                    echo -e "${RED}       $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\"]${RESET}"
+                    echo -e "${RED}       $0 <instance_name> [start|stop|restart|send_rcon \"<rcon_command>\" |backup <world_folder>]${RESET}"
                     echo "Or run without arguments to enter interactive mode."
                     exit 1
                     ;;
