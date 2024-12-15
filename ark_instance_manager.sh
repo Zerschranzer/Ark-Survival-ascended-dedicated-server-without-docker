@@ -171,17 +171,16 @@ check_for_duplicate_ports() {
 
                 # Extract ports from the config
                 local game_port rcon_port query_port
-                game_port=$(grep -E "^Port=" "$config_file"      | cut -d= -f2- | xargs)
-                rcon_port=$(grep -E "^RCONPort=" "$config_file"   | cut -d= -f2- | xargs)
+                game_port=$(grep -E "^Port=" "$config_file" | cut -d= -f2- | xargs)
+                rcon_port=$(grep -E "^RCONPort=" "$config_file" | cut -d= -f2- | xargs)
                 query_port=$(grep -E "^QueryPort=" "$config_file" | cut -d= -f2- | xargs)
 
                 # Ignore entries if they are empty
-                [ -z "$game_port" ]  && game_port="NULL"
-                [ -z "$rcon_port" ]  && rcon_port="NULL"
+                [ -z "$game_port" ] && game_port="NULL"
+                [ -z "$rcon_port" ] && rcon_port="NULL"
                 [ -z "$query_port" ] && query_port="NULL"
 
-                # Add ports to the dictionary; Key = Port, Value = Instance name
-                # If the port is already in use, log the conflict
+                # Check for conflicts
                 if [ "$game_port" != "NULL" ]; then
                     if [ -n "${port_occurrences[$game_port]}" ]; then
                         echo -e "${RED}Conflict: Game port $game_port is used by both '${port_occurrences[$game_port]}' and '$instance_name'.${RESET}"
@@ -214,11 +213,12 @@ check_for_duplicate_ports() {
 
     if [ "$duplicates_found" = true ]; then
         echo -e "${RED}Port duplicates were found. Please correct the ports in the instance_config.ini files.${RESET}"
-        echo -e "${RED}Server will not start.${RESET}"
-        exit 1
+        return 1
+    else
+        echo -e "${GREEN}No duplicate ports found.${RESET}"
+        return 0
     fi
 }
-
 # Function to check if a server is running
 is_server_running() {
     local instance=$1
@@ -469,8 +469,11 @@ select_instance() {
 # Function to start the server
 start_server() {
     local instance=$1
-    #First, check if ports are assigned multiple times:
-    check_for_duplicate_ports
+    # Check for duplicate ports
+    if ! check_for_duplicate_ports; then
+        echo -e "${YELLOW}Port conflicts detected. Server start aborted.${RESET}"
+        return 1
+    fi
 
     if is_server_running "$instance"; then
         echo -e "${YELLOW}Server for instance $instance is already running.${RESET}"
@@ -609,17 +612,24 @@ start_all_instances() {
     for instance in "$INSTANCES_DIR"/*; do
         if [ -d "$instance" ]; then
             instance_name=$(basename "$instance")
+
+            # Check if the server is already running
             if is_server_running "$instance_name"; then
                 echo -e "${YELLOW}Instance $instance_name is already running. Skipping...${RESET}"
                 continue
             fi
-            start_server "$instance_name"
-            # Waiting 30 seconds before starting the next instance
-            echo -e "${YELLOW}Waiting 30 seconds before starting the next instance...${RESET}"
-            sleep 30
+
+            # Attempt to start the server
+            if start_server "$instance_name"; then
+                # Only wait 30 seconds if the server started successfully
+                echo -e "${YELLOW}Waiting 30 seconds before starting the next instance...${RESET}"
+                sleep 30
+            else
+                echo -e "${RED}Server $instance_name could not be started due to conflicts or errors. Skipping wait time.${RESET}"
+            fi
         fi
     done
-    echo -e "${GREEN}All instances have been started.${RESET}"
+    echo -e "${GREEN}All instances have been processed.${RESET}"
 }
 
 # Function to stop all instances
@@ -892,10 +902,12 @@ restore_backup_to_instance() {
     fi
 
     local backups_dir="$BASE_DIR/backups"
+    set +e
     if [ ! -d "$backups_dir" ]; then
         echo -e "${RED}Backup directory '$backups_dir' does not exist.${RESET}"
         return 1
     fi
+    set -e
 
     # Gather all *.tar.gz files in $backups_dir
     local backup_files=()
