@@ -129,6 +129,32 @@ Each server instance in this manager is highly customizable, allowing for unique
 
 3. **`Game.ini`** (Optional): You can add this file to the instance directory for additional game settings. If present, it will be applied when starting the instance.
 
+### Important Note on `CustomStartParameters`
+
+If you are upgrading from an older version of the script, please note that the `CustomStartParameters` option was not included in the previous `instance_config.ini` files. As a result, the new script will not automatically add or recognize this field in existing instance configurations. 
+
+To take advantage of this feature, you will need to manually add the following line to each `instance_config.ini` file where you want custom start parameters:
+
+```ini
+CustomStartParameters=-NoBattlEye -crossplay -NoHangDetection
+```
+
+This is the default setting used by the previous script. You can customize these parameters to suit your server's needs. If you do not add this line, the server will run without additional custom parameters, which might lead to unintended behavior.
+
+**Steps to update your existing instances:**
+1. Open the `instance_config.ini` file for each instance:
+   ```bash
+   nano /path/to/instances/<instance_name>/instance_config.ini
+   ```
+2. Add the following line under `[ServerSettings]`:
+   ```ini
+   CustomStartParameters=-NoBattlEye -crossplay -NoHangDetection
+   ```
+3. Save the file and restart the instance for the changes to take effect.
+
+**Why is this important?**
+Custom start parameters allow for greater flexibility in server behavior, such as enabling crossplay or disabling BattlEye. If omitted, your server might not operate as intended, especially if you rely on features enabled by these parameters.
+
 ### Configuration Application
 
 - The script creates symlinks to ensure that the correct configuration files are loaded for each instance.
