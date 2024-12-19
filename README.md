@@ -128,7 +128,7 @@ Each server instance in this manager is highly customizable, allowing for unique
 
 2. **`GameUserSettings.ini`**: Located in the instance's directory within the `instances` folder. This file allows you to configure game-specific settings for each instance separately.
 
-3. **`Game.ini`** (Optional): You can add this file to the instance directory for additional game settings. If present, it will be applied when starting the instance.
+3. **`Game.ini`** (Optional): You can add this file to the instance directory (`instances/<yourinstance>/Config/`) for additional game settings. If present, it will be applied when starting the instance.
 
 ### Important Note on `CustomStartParameters`
 
