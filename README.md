@@ -124,6 +124,7 @@ Each server instance in this manager is highly customizable, allowing for unique
    - ModIDs
    - SaveDir
    - ClusterID
+   - CustomStartParameters
 
 2. **`GameUserSettings.ini`**: Located in the instance's directory within the `instances` folder. This file allows you to configure game-specific settings for each instance separately.
 
