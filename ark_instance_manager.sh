@@ -25,7 +25,7 @@ INSTANCES_DIR="$BASE_DIR/instances"
 # Define the base paths as variables
 STEAMCMD_DIR="$BASE_DIR/steamcmd"
 SERVER_FILES_DIR="$BASE_DIR/server-files"
-PROTON_VERSION="GE-Proton9-5"
+PROTON_VERSION="GE-Proton9-21"
 PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
 RCONCLI_VERSION="0.10.3"
 RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
@@ -385,24 +385,26 @@ load_instance_config() {
     local instance=$1
     local config_file="$INSTANCES_DIR/$instance/instance_config.ini"
 
-    if [ -f "$config_file" ]; then
-        # Read configuration into variables
-        SERVER_NAME=$(grep "ServerName=" "$config_file" | cut -d= -f2-)
-        SERVER_PASSWORD=$(grep "ServerPassword=" "$config_file" | cut -d= -f2-)
-        ADMIN_PASSWORD=$(grep "ServerAdminPassword=" "$config_file" | cut -d= -f2-)
-        MAX_PLAYERS=$(grep "MaxPlayers=" "$config_file" | cut -d= -f2-)
-        MAP_NAME=$(grep "MapName=" "$config_file" | cut -d= -f2-)
-        RCON_PORT=$(grep "RCONPort=" "$config_file" | cut -d= -f2-)
-        QUERY_PORT=$(grep "QueryPort=" "$config_file" | cut -d= -f2-)
-        GAME_PORT=$(grep "Port=" "$config_file" | cut -d= -f2-)
-        MOD_IDS=$(grep "ModIDs=" "$config_file" | cut -d= -f2-)
-        SAVE_DIR=$(grep "SaveDir=" "$config_file" | cut -d= -f2-)
-        CLUSTER_ID=$(grep "ClusterID=" "$config_file" | cut -d= -f2-)
-        CUSTOM_START_PARAMETERS=$(grep "CustomStartParameters=" "$config_file" | cut -d= -f2-)
-    else
+    if [ ! -f "$config_file" ]; then
         echo -e "${RED}Configuration file for instance $instance not found.${RESET}"
         return 1
     fi
+
+    # Read configuration into variables
+    SERVER_NAME=$(grep -E '^ServerName=' "$config_file" | cut -d= -f2- | xargs)
+    SERVER_PASSWORD=$(grep -E '^ServerPassword=' "$config_file" | cut -d= -f2- | xargs)
+    ADMIN_PASSWORD=$(grep -E '^ServerAdminPassword=' "$config_file" | cut -d= -f2- | xargs)
+    MAX_PLAYERS=$(grep -E '^MaxPlayers=' "$config_file" | cut -d= -f2- | xargs)
+    MAP_NAME=$(grep -E '^MapName=' "$config_file" | cut -d= -f2- | xargs)
+    RCON_PORT=$(grep -E '^RCONPort=' "$config_file" | cut -d= -f2- | xargs)
+    QUERY_PORT=$(grep -E '^QueryPort=' "$config_file" | cut -d= -f2- | xargs)
+    GAME_PORT=$(grep -E '^Port=' "$config_file" | cut -d= -f2- | xargs)
+    MOD_IDS=$(grep -E '^ModIDs=' "$config_file" | cut -d= -f2- | xargs)
+    SAVE_DIR=$(grep -E '^SaveDir=' "$config_file" | cut -d= -f2- | xargs)
+    CLUSTER_ID=$(grep -E '^ClusterID=' "$config_file" | cut -d= -f2- | xargs)
+    CUSTOM_START_PARAMETERS=$(grep -E '^CustomStartParameters=' "$config_file" | cut -d= -f2- | xargs)
+
+    return 0
 }
 
 # Function to create a new instance (using 'read' with validation)
@@ -523,15 +525,18 @@ start_server() {
     # Adding a trailing space to the ServerName to avoid conflicts if the ServerName is identical to the instance name.
     # This ensures the server processes the name correctly, even though the space is invisible to users.
     "$PROTON_DIR/proton" run "$SERVER_FILES_DIR/ShooterGame/Binaries/Win64/ArkAscendedServer.exe" \
-        "$MAP_NAME?listen?SessionName=$SERVER_NAME ?ServerPassword=$SERVER_PASSWORD?ServerAdminPassword=$ADMIN_PASSWORD?QueryPort=$QUERY_PORT?Port=$GAME_PORT?RCONEnabled=True?RCONPort=$RCON_PORT?AltSaveDirectoryName=$SAVE_DIR" \
-        $CUSTOM_START_PARAMETERS \
-        -WinLiveMaxPlayers=$MAX_PLAYERS \
-        -game \
-        $cluster_params \
-        -server \
-        -log \
-        -mods="$MOD_IDS" \
-        > "$INSTANCES_DIR/$instance/server.log" 2>&1 &
+    "$MAP_NAME?listen?SessionName=$SERVER_NAME ?ServerPassword=$SERVER_PASSWORD?RCONEnabled=True?ServerAdminPassword=$ADMIN_PASSWORD?AltSaveDirectoryName=$SAVE_DIR" \
+    $CUSTOM_START_PARAMETERS \
+    -WinLiveMaxPlayers=$MAX_PLAYERS \
+    -Port=$GAME_PORT \
+    -QueryPort=$QUERY_PORT \
+    -RCONPort=$RCON_PORT \
+    -game \
+    $cluster_params \
+    -server \
+    -log \
+    -mods="$MOD_IDS" \
+    > "$INSTANCES_DIR/$instance/server.log" 2>&1 &
 
     echo -e "${GREEN}Server started for instance: $instance. It should be fully operational in approximately 60 seconds.${RESET}"
 }
