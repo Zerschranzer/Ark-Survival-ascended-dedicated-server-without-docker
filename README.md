@@ -32,12 +32,12 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker.git
+   git clone https://github.com/Zerschranzer/Linux-ASA-Server-Manager.git
    ```
 
 2. Navigate to the repository directory:
    ```bash
-   cd Ark-Survival-ascended-dedicated-server-without-docker
+   cd Linux-ASA-Server-Manager
    ```
 
 3. Make all necessary scripts executable:
