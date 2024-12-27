@@ -6,23 +6,23 @@ This repository provides a set of scripts—primarily **`ark_instance_manager.sh
 
 ## Table of Contents
 
-1. [Key Features](#key-features)  
-2. [System Requirements](#system-requirements)  
-3. [Installation & Setup](#installation--setup)  
-4. [Usage](#usage)  
-   - [Interactive Menu](#interactive-menu)  
-   - [Command-Line Usage](#command-line-usage)  
-5. [Managing Instances](#managing-instances)  
-   - [Creating a New Instance](#creating-a-new-instance)  
-   - [Configuration Files](#configuration-files)  
-   - [Maps and Mods](#maps-and-mods)  
-   - [Clustering](#clustering)  
-6. [Backups & Restores](#backups--restores)  
-7. [Automated Restarts](#automated-restarts)  
-8. [RCON Console](#rcon-console)  
-9. [Troubleshooting](#troubleshooting)  
-10. [Credits](#credits)  
-11. [License](#license)
+- [1. Key Features](#1-key-features)  
+- [2. System Requirements](#2-system-requirements)  
+- [3. Installation & Setup](#3-installation--setup)  
+- [4. Usage](#4-usage)  
+  - [4.1 Interactive Menu](#41-interactive-menu)  
+  - [4.2 Command-Line Usage](#42-command-line-usage)  
+- [5. Managing Instances](#5-managing-instances)  
+  - [5.1 Creating a New Instance](#51-creating-a-new-instance)  
+  - [5.2 Configuration Files](#52-configuration-files)  
+  - [5.3 Maps and Mods](#53-maps-and-mods)  
+  - [5.4 Clustering](#54-clustering)  
+- [6. Backups & Restores](#6-backups--restores)  
+- [7. Automated Restarts](#7-automated-restarts)  
+- [8. RCON Console](#8-rcon-console)  
+- [9. Troubleshooting](#9-troubleshooting)  
+- [10. Credits](#10-credits)  
+- [11. License](#11-license)
 
 ---
 
@@ -47,12 +47,11 @@ This repository provides a set of scripts—primarily **`ark_instance_manager.sh
 - **CPU**: Minimum 4 cores (6–8 recommended).  
 - **RAM**: Minimum 16 GB (8 GB often leads to crashes or poor performance).  
 - **Storage**: Enough disk space for ARK server files (can be quite large).  
-- **Linux Distribution with**:
-  - `apt-get`, `zypper`, `dnf`, **or** `pacman` (for dependency installation)  
-  - `sudo` or root privileges (to install packages)  
-- **Internet Connection**: Required to download SteamCMD, Proton, and server files.
+- **Linux Distribution** with a package manager (`apt-get`, `zypper`, `dnf`, or `pacman`).  
+- **sudo/root privileges** if you need to install missing dependencies.  
+- **Internet Connection** for downloading server files, SteamCMD, and Proton.
 
-> **Note**: ASA is resource-intensive. Make sure your system can handle the load before running multiple instances.
+> **Note**: ASA is resource-intensive. Monitor your CPU/RAM usage if running multiple instances.
 
 ---
 
@@ -77,7 +76,7 @@ This repository provides a set of scripts—primarily **`ark_instance_manager.sh
    - This installs (or updates) ASA server files via SteamCMD.  
    - **Important**: Always do this step before creating any instances to ensure all server binaries and Proton are properly set up.
 
-4. **(Optional) Set up a symlink** to run the script from anywhere:
+4. **(Optional) Create a symlink** to run the script from anywhere:
    ```bash
    ./ark_instance_manager.sh setup
    ```
@@ -87,7 +86,7 @@ This repository provides a set of scripts—primarily **`ark_instance_manager.sh
 
 ## 4. Usage
 
-### Interactive Menu
+### 4.1 Interactive Menu
 
 Running **`./ark_instance_manager.sh`** with **no arguments** enters a menu-based interface:
 ```
@@ -97,11 +96,11 @@ Running **`./ark_instance_manager.sh`** with **no arguments** enters a menu-base
 4) Manage Instance
 ...
 ```
-You can select numbered options to install the server, create/edit instances, start/stop servers, manage backups, etc.
+Use the numbered options to install the server, create/edit instances, start/stop servers, manage backups, etc.
 
-### Command-Line Usage
+### 4.2 Command-Line Usage
 
-Alternatively, pass arguments directly for quick tasks or automation. Common commands:
+For quick tasks or automation, pass arguments directly:
 
 ```bash
 # Installs/updates the base server
@@ -126,133 +125,133 @@ Alternatively, pass arguments directly for quick tasks or automation. Common com
 ./ark_instance_manager.sh <instance_name> send_rcon "<RCON command>"
 ./ark_instance_manager.sh <instance_name> backup <world_folder>
 ```
-Use these for scripts (like cron jobs) or when you already know exactly which action you want.
+Use these for scripts (like cron) or when you know exactly what action is needed.
 
 ---
 
 ## 5. Managing Instances
 
-Each instance lives in `instances/<instance_name>` with its own config, logs, and save folder, allowing for fully independent servers.
+Each instance lives in `instances/<instance_name>` with its own configs, logs, and save folders, allowing fully independent servers.
 
-### Creating a New Instance
+### 5.1 Creating a New Instance
 
 1. In the **interactive menu**, choose **"Create New Instance"**.  
-2. Enter a **unique name** (e.g., `island_server_1`, `gen2_pvp`, etc.).  
-   - Avoid overly similar names, like `instance` vs. `instance1`, to prevent confusion when stopping/starting.  
-3. The script creates the folder structure and opens the new `instance_config.ini`.
+2. Enter a **unique name** (e.g., `island_server_1`, `gen2_pvp`); avoid extremely similar names like `instance` vs. `instance1`.  
+3. The script creates the folder structure and opens `instance_config.ini` for you to edit.
 
-### Configuration Files
+### 5.2 Configuration Files
 
 1. **`instance_config.ini`**  
-   - Main server settings for each instance, including:
+   - Main server settings for each instance, such as:
      - `ServerName`, `ServerPassword`, `ServerAdminPassword`, `MaxPlayers`  
      - `MapName`, `ModIDs`, `Port`, `QueryPort`, `RCONPort`, `SaveDir`  
      - `ClusterID` (if clustering), `CustomStartParameters` (e.g., `-NoBattlEye -crossplay`)  
 2. **`GameUserSettings.ini`** in `instances/<instance_name>/Config/`  
-   - ARK’s typical server options (XP rates, taming speed, etc.).  
+   - ARK’s standard server settings (XP rates, rules, etc.).  
 3. **`Game.ini`** (optional)  
-   - For more advanced or custom server configurations (engrams, spawn weights, etc.).
+   - For advanced config (engrams, spawn weights, etc.).
 
-> **Tip**: Stopping the server before editing these files is generally recommended. Changes apply on next start.
+> **Tip**: Stopping the server before editing these files is recommended. Changes apply on the next start.
 
-### Maps and Mods
+### 5.3 Maps and Mods
 
 - **Map**: Set `MapName` in `instance_config.ini` (e.g., `TheIsland_WP`, `Fjordur_WP`).  
-- **Mods**: Add mod IDs as a comma-separated list under `ModIDs=`. The script will load them when you start the server.
+- **Mods**: Add a comma-separated list of mod IDs under `ModIDs=`.
 
-### Clustering
+### 5.4 Clustering
 
-1. Assign a **shared `ClusterID`** in each instance’s `instance_config.ini`.  
+1. Set a **shared `ClusterID`** in each instance’s `instance_config.ini`.  
 2. The script automatically creates a cluster directory and links them.  
-3. Players can transfer characters/dinos/items across these servers in-game.
+3. Players can transfer characters/dinos/items between these servers in-game.
 
 ---
 
 ## 6. Backups & Restores
 
-**Backups** help preserve your world data:
+**Backups** preserve your world data in `.tar.gz` archives:
 
-- **Via menu**: **"Backup a World from Instance"**. Choose which instance and world folder.  
+- **Via menu**: **"Backup a World from Instance"**. Select the instance and world folder.  
 - **Via CLI**:
   ```bash
   ./ark_instance_manager.sh <instance_name> backup <world_folder>
   ```
-  It creates a `.tar.gz` archive in `backups/`.  
-  > **Stop** the server to avoid corrupt backups.
+  It creates an archive in `backups/`.  
+  > **Stop** the server first to avoid corrupt backups.
 
-**Restores** are also menu-driven: **"Load Backup to Instance"**. This overwrites the existing world files with those from your chosen archive.
+**Restores** are menu-driven under **"Load Backup to Instance"**. This overwrites existing world files with those from your chosen archive.
 
 ---
 
 ## 7. Automated Restarts
 
-**`ark_restart_manager.sh`** handles scheduled restarts. It:
+**`ark_restart_manager.sh`** automates scheduled restarts:
 
-1. **Announces** restarts at intervals (e.g., 30 min, 20 min, 10 min).  
-2. **Stops** instances gracefully.  
+1. **Announces** restarts at configurable intervals (e.g., 30 min, 20 min, 10 min).  
+2. **Stops** instances gracefully (then force if needed).  
 3. **Updates** the base server.  
-4. **Restarts** instances with a delay between each.
+4. **Restarts** instances with a delay in between.
 
 ### Configuration
 
-Open `ark_restart_manager.sh` in a text editor and modify:
+Edit the top of `ark_restart_manager.sh`:
 
 - `instances=("myserver1" "myserver2")`  
 - `announcement_times=(1800 1200 600 180 10)`  
-- `announcement_messages=( ... )`  
-- `start_wait_time=30` (seconds between starts)
+- `announcement_messages=("Server restart in 30 minutes" ... )`  
+- `start_wait_time=30` (seconds)
 
-### Scheduling
+### Scheduling with Cron
 
-Use **cron** to run `ark_restart_manager.sh` daily at (for example) 4:00 AM:
 ```bash
 crontab -e
-# Add:
+# Example: daily restarts at 4:00 AM
 0 4 * * * /path/to/ark_restart_manager.sh
 ```
+
 Logs are kept in `ark_restart_manager.log`.
 
 ---
 
 ## 8. RCON Console
 
-The script **`rcon.py`** provides an RCON client. Use it directly:
+The **`rcon.py`** script is a Python-based RCON client:
+
 ```bash
 ./rcon.py 127.0.0.1:27020 -p "MyRconPassword"
 ```
-- Type commands at the prompt (e.g., `broadcast Hello!`).
+- Opens an interactive console (`RCON>`) to send commands (e.g., `broadcast Hello!`).
 
 Or send a single command:
 ```bash
 ./rcon.py 127.0.0.1:27020 -p "MyRconPassword" -c "SaveWorld"
 ```
-**`ark_instance_manager.sh`** also uses it internally to shut down servers gracefully and to open an interactive RCON console from the menu.
+
+**`ark_instance_manager.sh`** uses `rcon.py` for graceful shutdown and interactive RCON access from the menu.
 
 ---
 
 ## 9. Troubleshooting
 
 - **Check Logs**: `instances/<instance_name>/server.log` for server errors.  
-- **Dependencies**: If the script complains about missing packages, install them (the script tries to help with instructions).  
-- **Ports**: Ensure unique ports for each instance, and open them in your firewall if hosting publicly.  
-- **Naming Collisions**: Give instances clearly distinct names to avoid accidentally stopping the wrong process.  
-- **Performance**: ASA can be resource-heavy. Monitor CPU/RAM usage.  
-- **“Invalid cluster ID or no cluster”**: Ensure `ClusterID` matches across all clustered servers.  
+- **Dependencies**: If missing, the script instructs how to install them for your distro.  
+- **Unique Ports**: Ensure each instance uses different ports, and open them in your firewall if needed.  
+- **Naming Collisions**: Distinct instance names prevent accidentally stopping the wrong server.  
+- **System Resources**: ASA is resource-heavy; watch CPU/RAM usage, especially with multiple instances.  
 
 ---
 
 ## 10. Credits
 
 - [SteamCMD](https://developer.valvesoftware.com/wiki/SteamCMD) for server file updates.  
-- [Proton GE Custom](https://github.com/GloriousEggroll/proton-ge-custom) for running Windows apps on Linux.  
+- [Proton GE Custom](https://github.com/GloriousEggroll/proton-ge-custom) for running Windows apps on Linux.
 
 ---
 
 ## 11. License
 
-This project is licensed under the [MIT License](LICENSE). Feel free to modify and share these scripts. If you fix bugs or extend functionality, consider opening a PR so everyone benefits.
+This project is licensed under the [MIT License](LICENSE). Feel free to modify and share these scripts. If you enhance or fix them, consider opening a PR so others benefit.
 
 ---
 
-**Enjoy managing your Ark Survival Ascended servers on Linux!**  
-If you encounter issues or have ideas to improve these scripts, please open an issue or pull request on GitHub.
+**Enjoy managing your Ark Survival Ascended server(s) on Linux!**  
+If you run into any issues or have suggestions, please open an issue or pull request on GitHub.
