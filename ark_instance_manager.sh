@@ -27,13 +27,10 @@ STEAMCMD_DIR="$BASE_DIR/steamcmd"
 SERVER_FILES_DIR="$BASE_DIR/server-files"
 PROTON_VERSION="GE-Proton9-21"
 PROTON_DIR="$BASE_DIR/$PROTON_VERSION"
-RCONCLI_VERSION="0.10.3"
-RCON_CLI_DIR="$BASE_DIR/rcon-$RCONCLI_VERSION-amd64_linux"
 
-# Define URLs for SteamCMD, Proton, and RCON CLI
+# Define URLs for SteamCMD and Proton.
 STEAMCMD_URL="https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz"
 PROTON_URL="https://github.com/GloriousEggroll/proton-ge-custom/releases/download/$PROTON_VERSION/$PROTON_VERSION.tar.gz"
-RCONCLI_URL="https://github.com/gorcon/rcon-cli/releases/download/v$RCONCLI_VERSION/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
 
 check_dependencies() {
     local missing=()
@@ -152,6 +149,22 @@ check_dependencies() {
 # Check dependencies before proceeding
 check_dependencies
 
+# Function to check if required scripts are executable
+check_executables() {
+    local required_files=("$BASE_DIR/rcon.py" "$BASE_DIR/ark_restart_manager.sh" "$BASE_DIR/ark_instance_manager.sh")
+    for file in "${required_files[@]}"; do
+        if [ ! -x "$file" ]; then
+            echo -e "${RED}Error: Required file '$file' is not executable.${RESET}"
+            echo -e "${CYAN}Run 'chmod +x $file' to fix this issue.${RESET}"
+            exit 1
+        fi
+    done
+    echo -e "${GREEN}All required files are executable.${RESET}"
+}
+
+# Call the function at the start of the script
+check_executables
+
 # This function searches all instance_config.ini files in the $INSTANCES_DIR folder
 # and collects the ports into arrays
 check_for_duplicate_ports() {
@@ -235,7 +248,7 @@ install_base_server() {
     echo -e "${CYAN}Installing/updating base server...${RESET}"
 
     # Create necessary directories
-    mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$RCON_CLI_DIR" "$SERVER_FILES_DIR"
+    mkdir -p "$STEAMCMD_DIR" "$PROTON_DIR" "$SERVER_FILES_DIR"
 
     # Download and unpack SteamCMD if not already installed
     if [ ! -f "$STEAMCMD_DIR/steamcmd.sh" ]; then
@@ -255,16 +268,6 @@ install_base_server() {
         rm "$PROTON_DIR/$PROTON_VERSION.tar.gz"
     else
         echo -e "${GREEN}Proton already installed.${RESET}"
-    fi
-
-    # Download and unpack RCON CLI if not already installed
-    if [ ! -f "$RCON_CLI_DIR/rcon" ]; then
-        echo -e "${CYAN}Downloading RCON CLI...${RESET}"
-        wget -q -O "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" "$RCONCLI_URL"
-        tar -xzf "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz" -C "$RCON_CLI_DIR" --strip-components=1
-        rm "$RCON_CLI_DIR/rcon-$RCONCLI_VERSION-amd64_linux.tar.gz"
-    else
-        echo -e "${GREEN}RCON CLI already installed.${RESET}"
     fi
 
     # Install or update ARK server using SteamCMD
@@ -551,19 +554,28 @@ stop_server() {
 
     load_instance_config "$instance" || return 1
 
-    echo -e "${GREEN}Save world for instance $instance...${RESET}"
-    send_rcon_command "$instance" "SaveWorld" || true
-    sleep 3
+    echo -e "${GREEN}Attempting graceful shutdown for instance $instance...${RESET}"
+    if send_rcon_command "$instance" "DoExit"; then
+        echo -e "${GREEN}Graceful shutdown command sent successfully to instance $instance.${RESET}"
+        for i in {1..10}; do
+            sleep 1
+            if ! is_server_running "$instance"; then
+                echo -e "${GREEN}Server for instance $instance has shut down gracefully.${RESET}"
+                return 0
+            fi
+        done
+    fi
 
-    echo -e "${CYAN}Stopping server for instance: $instance${RESET}"
+    echo -e "${RED}Graceful shutdown failed or server is still running after 10 seconds. Forcing shutdown.${RESET}"
     pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" || true
-    echo -e "${GREEN}Server stopped for instance: $instance${RESET}"
+    echo -e "${GREEN}Server for instance $instance has been forcefully stopped.${RESET}"
 }
 
 # Function to start RCON CLI
 start_rcon_cli() {
     local instance=$1
-        if ! is_server_running "$instance"; then
+
+    if ! is_server_running "$instance"; then
         echo -e "${YELLOW}Server for instance $instance is not running.${RESET}"
         return 0
     fi
@@ -571,7 +583,14 @@ start_rcon_cli() {
     load_instance_config "$instance" || return 1
 
     echo -e "${CYAN}Starting RCON CLI for instance: $instance${RESET}"
-    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" || true
+
+    # Use the new RCON-Client
+    "$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" || {
+        echo -e "${RED}Failed to start RCON CLI for instance $instance.${RESET}"
+        return 1
+    }
+
+    return 0
 }
 
 # Function to change map
@@ -661,6 +680,7 @@ stop_all_instances() {
 send_rcon_command() {
     local instance=$1
     local command=$2
+
     if ! is_server_running "$instance"; then
         echo -e "${YELLOW}Server for instance $instance is not running. Cannot send RCON command.${RESET}"
         return 1
@@ -669,7 +689,11 @@ send_rcon_command() {
     load_instance_config "$instance" || return 1
 
     echo -e "${CYAN}Sending RCON command to instance: $instance${RESET}"
-    "$RCON_CLI_DIR/rcon" -a "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" "$command" || true
+
+    "$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" -c "$command" || {
+        echo -e "${RED}Failed to send RCON command to instance $instance.${RESET}"
+        return 1
+    }
 }
 
 # Function to show running instances
