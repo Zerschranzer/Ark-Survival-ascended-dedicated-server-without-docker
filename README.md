@@ -131,7 +131,7 @@ Use these for scripts (like cron) or when you know exactly what action is needed
 
 ## 5. Managing Instances
 
-Each instance lives in `instances/<instance_name>` with its own configs, logs, and save folders, allowing fully independent servers.
+Each instance lives in `instances/<instance_name>` with its own configs and logs, allowing fully independent servers.
 
 ### 5.1 Creating a New Instance
 
