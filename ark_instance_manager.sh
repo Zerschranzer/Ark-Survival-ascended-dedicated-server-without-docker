@@ -19,8 +19,11 @@ RESET='\e[0m'
 trap 'echo -e "${RED}Script interrupted. Servers that have already started will continue running.${RESET}"; pkill -P $$; exit 1' SIGINT SIGTERM
 
 # Base directory for all instances
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(cd "$(dirname "$(realpath "$0")")" && pwd)"
 INSTANCES_DIR="$BASE_DIR/instances"
+RCON_SCRIPT="$BASE_DIR/rcon.py"
+ARK_RESTART_MANAGER="$BASE_DIR/ark_restart_manager.sh"
+ARK_INSTANCE_MANAGER="$BASE_DIR/ark_instance_manager.sh"
 
 # Define the base paths as variables
 STEAMCMD_DIR="$BASE_DIR/steamcmd"
@@ -151,19 +154,52 @@ check_dependencies
 
 # Function to check if required scripts are executable
 check_executables() {
-    local required_files=("$BASE_DIR/rcon.py" "$BASE_DIR/ark_restart_manager.sh" "$BASE_DIR/ark_instance_manager.sh")
+    local required_files=("$RCON_SCRIPT" "$ARK_RESTART_MANAGER" "$ARK_INSTANCE_MANAGER")
     for file in "${required_files[@]}"; do
         if [ ! -x "$file" ]; then
-            echo -e "${RED}Error: Required file '$file' is not executable.${RESET}"
-            echo -e "${CYAN}Run 'chmod +x $file' to fix this issue.${RESET}"
+            echo -e "Error: Required file '$file' is not executable."
+            echo -e "Run 'chmod +x $file' to fix this issue."
             exit 1
         fi
     done
-    echo -e "${GREEN}All required files are executable.${RESET}"
 }
 
 # Call the function at the start of the script
 check_executables
+
+#Sets up a symlink
+setup_symlink() {
+    # Target directory for the symlink
+    local target_dir="$HOME/.local/bin"
+    # Name under which the script can be invoked
+    local script_name="asa-manager"
+
+    # Check if the target directory exists
+    if [ ! -d "$target_dir" ]; then
+        echo -e "Creating directory $target_dir..."
+        mkdir -p "$target_dir" || {
+            echo -e "Error: Could not create directory $target_dir."
+            exit 1
+        }
+    fi
+
+    # Create or update the symlink
+    echo -e "Creating or updating the symlink $target_dir/$script_name..."
+    ln -sf "$(realpath "$0")" "$target_dir/$script_name" || {
+        echo -e "Error: Could not create symlink."
+        exit 1
+    }
+
+    # Check if $HOME/.local/bin is in the PATH
+    if [[ ":$PATH:" != *":$target_dir:"* ]]; then
+        echo -e "Adding $target_dir to PATH..."
+        echo 'export PATH=$PATH:$HOME/.local/bin' >> "$HOME/.bashrc"
+        echo "The change will take effect after restarting the shell or running 'source ~/.bashrc'."
+    fi
+
+    echo -e "Setup completed. You can now run the script using 'asa-manager'."
+}
+
 
 # This function searches all instance_config.ini files in the $INSTANCES_DIR folder
 # and collects the ports into arrays
@@ -1248,6 +1284,9 @@ else
     case $1 in
         update)
             install_base_server
+            ;;
+        setup)
+            setup_symlink
             ;;
         start_all)
             start_all_instances
