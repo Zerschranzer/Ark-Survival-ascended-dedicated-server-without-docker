@@ -30,22 +30,27 @@ Welcome to the comprehensive guide for installing and managing ARK: Survival Asc
 
 ## Installation and Setup
 
-1. Download the script:
+1. Clone the repository:
    ```bash
-   wget https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker/raw/main/ark_instance_manager.sh
+   git clone https://github.com/Zerschranzer/Ark-Survival-ascended-dedicated-server-without-docker.git
    ```
 
-2. Make it executable:
+2. Navigate to the repository directory:
    ```bash
-   chmod +x ark_instance_manager.sh
+   cd Ark-Survival-ascended-dedicated-server-without-docker
    ```
 
-3. Run the script to install the base server:
+3. Make all necessary scripts executable:
+   ```bash
+    chmod +x ark_instance_manager.sh ark_restart_manager.sh rcon.py
+   ```
+
+4. Run the `ark_instance_manager.sh` script to install the base server:
    ```bash
    ./ark_instance_manager.sh
    ```
 
-4. Choose "Install/Update Base Server" from the main menu to download and set up the ARK server files. This function serves to install the server as well as update it to always be up to date. It's crucial to run this before creating any instances to ensure all necessary files are present for starting server instances.
+5. Choose "Install/Update Base Server" from the main menu to download and set up the ARK server files. This function serves to install the server as well as update it to always be up to date. It's crucial to run this before creating any instances to ensure all necessary files are present for starting server instances.
 
 **Important:** You must install the base server before creating instances. This ensures that all necessary files are present to start server instances.
 
@@ -250,7 +255,6 @@ The Restart Manager performs the following actions:
 ## Credits
 
 This project makes use of the following open-source tools:
-- [rcon-cli](https://github.com/gorcon/rcon-cli) for remote console management.
 - [Proton GE Custom](https://github.com/GloriousEggroll/proton-ge-custom) for running Windows applications on Linux.
 
 - A big thanks to the developers of these tools who make my server manager possible!
