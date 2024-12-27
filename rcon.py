@@ -63,7 +63,7 @@ def send_command_and_process_response(conn, command):
 def send_rcon_command(host, port, password, command=None):
     try:
         with socket.create_connection((host, port), timeout=10) as conn:
-            print(f"Connected to {host}:{port}")
+            print(f"Connecting to {host}:{port}...")
 
             # Perform login if a password is provided
             if password:
