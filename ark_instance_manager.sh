@@ -157,8 +157,8 @@ check_executables() {
     local required_files=("$RCON_SCRIPT" "$ARK_RESTART_MANAGER" "$ARK_INSTANCE_MANAGER")
     for file in "${required_files[@]}"; do
         if [ ! -x "$file" ]; then
-            echo -e "Error: Required file '$file' is not executable."
-            echo -e "Run 'chmod +x $file' to fix this issue."
+            echo -e "${RED}Error: Required file '$file' is not executable.${RESET}"
+            echo -e "${CYAN}Run 'chmod +x $file' to fix this issue.${RESET}"
             exit 1
         fi
     done
