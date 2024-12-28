@@ -157,8 +157,8 @@ check_executables() {
     local required_files=("$RCON_SCRIPT" "$ARK_RESTART_MANAGER" "$ARK_INSTANCE_MANAGER")
     for file in "${required_files[@]}"; do
         if [ ! -x "$file" ]; then
-            echo -e "${RED}Error: Required file '$file' is not executable.${RESET}"
-            echo -e "${CYAN}Run 'chmod +x $file' to fix this issue.${RESET}"
+            echo -e "Error: Required file '$file' is not executable."
+            echo -e "Run 'chmod +x $file' to fix this issue."
             exit 1
         fi
     done
@@ -582,7 +582,8 @@ start_server() {
 
 # Function to stop the server
 stop_server() {
-    local instance=$1
+    local instance="$1"
+
     if ! is_server_running "$instance"; then
         echo -e "${YELLOW}Server for instance $instance is not running.${RESET}"
         return 0
@@ -591,20 +592,21 @@ stop_server() {
     load_instance_config "$instance" || return 1
 
     echo -e "${GREEN}Attempting graceful shutdown for instance $instance...${RESET}"
-    if send_rcon_command "$instance" "DoExit"; then
-        echo -e "${GREEN}Graceful shutdown command sent successfully to instance $instance.${RESET}"
-        for i in {1..10}; do
-            sleep 1
-            if ! is_server_running "$instance"; then
-                echo -e "${GREEN}Server for instance $instance has shut down gracefully.${RESET}"
-                return 0
-            fi
-        done
-    fi
 
-    echo -e "${RED}Graceful shutdown failed or server is still running after 10 seconds. Forcing shutdown.${RESET}"
-    pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" || true
-    echo -e "${GREEN}Server for instance $instance has been forcefully stopped.${RESET}"
+    # Send the "DoExit" command and capture the response
+    local response
+    response=$(send_rcon_command "$instance" "DoExit")
+
+    # Check if the response matches "Exiting..."
+    if [ "$response" == "Exiting..." ]; then
+        echo -e "${GREEN}Server instance $instance reported 'Exiting...'. Shutdown acknowledged.${RESET}"
+        return 0
+    else
+        echo -e "${RED}Graceful shutdown failed or timed out. Forcing shutdown.${RESET}"
+        pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" || true
+        echo -e "${GREEN}Server for instance $instance has been forcefully stopped.${RESET}"
+        return 0
+    fi
 }
 
 # Function to start RCON CLI
@@ -724,12 +726,19 @@ send_rcon_command() {
 
     load_instance_config "$instance" || return 1
 
-    echo -e "${CYAN}Sending RCON command to instance: $instance${RESET}"
+    # Always use the silent mode of the RCON client
+    local response
+    response=$("$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" -c "$command" --silent 2>&1)
 
-    "$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" -c "$command" || {
+    # Check if the RCON command was successful
+    if [ $? -ne 0 ]; then
         echo -e "${RED}Failed to send RCON command to instance $instance.${RESET}"
         return 1
-    }
+    fi
+
+    # Return the RCON response
+    echo "$response"
+    return 0
 }
 
 # Function to show running instances
