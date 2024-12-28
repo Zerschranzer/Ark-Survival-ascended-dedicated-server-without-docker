@@ -5,6 +5,7 @@ import struct
 import re
 
 DEBUG = False  # Enable debug output if set to True
+SILENT = False  # Suppress connection details if set to True
 
 def debug_print(message):
     if DEBUG:
@@ -73,46 +74,58 @@ def send_command_and_process_response(conn, command):
             break
         for _, _, payload in packets:
             if payload != "KEEP_ALIVE":
-                print("Response:", payload.strip())
+                if SILENT:
+                    print(payload.strip())  # Only print the payload in silent mode
+                else:
+                    print("Response:", payload.strip())
                 return
 
 def send_rcon_command(host, port, password, command=None):
     # Connect to the server, authenticate, and handle commands
     try:
         with socket.create_connection((host, port), timeout=10) as conn:
-            print(f"Connecting to {host}:{port}...")
+            if not SILENT:
+                print(f"Connecting to {host}:{port}...")
             if password:
                 login_packet = create_packet(1, 3, password)
                 conn.sendall(login_packet)
                 login_packets = receive_packets(conn)
                 if any(req_id == -1 for req_id, _, payload in login_packets if payload != "KEEP_ALIVE"):
-                    print("Login failed! Please check the password.")
+                    if not SILENT:
+                        print("Login failed! Please check the password.")
                     return
-                print("Login successful!")
+                if not SILENT:
+                    print("Login successful!")
             if command:
                 send_command_and_process_response(conn, command)
                 return
-            print("Interactive console started. Type 'exit' or 'quit' to close.")
+            if not SILENT:
+                print("Interactive console started. Type 'exit' or 'quit' to close.")
             while True:
                 user_command = input("RCON> ")
                 if user_command.lower() in {"exit", "quit"}:
-                    print("Exiting interactive console. Goodbye!")
+                    if not SILENT:
+                        print("Exiting interactive console. Goodbye!")
                     break
                 send_command_and_process_response(conn, user_command)
     except socket.timeout:
-        print("Error: Connection or response timed out.")
+        if not SILENT:
+            print("Error: Connection or response timed out.")
     except Exception as e:
-        print(f"Error: {e}")
+        if not SILENT:
+            print(f"Error: {e}")
 
 def main():
-    global DEBUG
+    global DEBUG, SILENT
     parser = argparse.ArgumentParser(description="RCON Client for sending commands to a game server.")
     parser.add_argument("host_port", type=parse_host_port, help="Host and port in the format 'host:port'.")
     parser.add_argument("-p", "--password", required=True, help="RCON password.")
     parser.add_argument("-c", "--command", help="A single RCON command to send.")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
+    parser.add_argument("--silent", action="store_true", help="Suppress connection details, output only the response.")
     args = parser.parse_args()
     DEBUG = args.debug
+    SILENT = args.silent
     host, port = args.host_port
     send_rcon_command(host, port, args.password, args.command)
 
