@@ -623,7 +623,7 @@ start_rcon_cli() {
     echo -e "${CYAN}Starting RCON CLI for instance: $instance${RESET}"
 
     # Use the new RCON-Client
-    "$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" || {
+    "$RCON_SCRIPT" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" || {
         echo -e "${RED}Failed to start RCON CLI for instance $instance.${RESET}"
         return 1
     }
@@ -728,7 +728,7 @@ send_rcon_command() {
 
     # Always use the silent mode of the RCON client
     local response
-    response=$("$BASE_DIR/rcon.py" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" -c "$command" --silent 2>&1)
+    response=$("$RCON_SCRIPT" "localhost:$RCON_PORT" -p "$ADMIN_PASSWORD" -c "$command" --silent 2>&1)
 
     # Check if the RCON command was successful
     if [ $? -ne 0 ]; then
