@@ -281,6 +281,29 @@ is_server_running() {
 
 # Function to install or update the base server
 install_base_server() {
+    local running_instances=0
+
+    set +e
+
+    # Iterate over all instance directories to check if any instance is running
+    for instance in "$INSTANCES_DIR"/*; do
+        if [ -d "$instance" ]; then
+            local instance_name=$(basename "$instance")
+            if is_server_running "$instance_name"; then
+                echo -e "${RED}Instance '$instance_name' is currently running. Please stop all instances before updating the base server.${RESET}"
+                ((running_instances++))
+            fi
+        fi
+    done
+
+    set -e
+
+    # Check if any instances were running
+    if [ "$running_instances" -gt 0 ]; then
+        echo -e "${YELLOW}Base server update skipped because $running_instances instance(s) are running.${RESET}"
+        return 0
+    fi
+
     echo -e "${CYAN}Installing/updating base server...${RESET}"
 
     # Create necessary directories
@@ -598,8 +621,24 @@ stop_server() {
     response=$(send_rcon_command "$instance" "DoExit")
 
     # Check if the response matches "Exiting..."
-    if [ "$response" == "Exiting..." ]; then
-        echo -e "${GREEN}Server instance $instance reported 'Exiting...'. Shutdown acknowledged.${RESET}"
+    if [[ "$response" == "Exiting..." ]]; then
+        echo -e "${GREEN}Server instance $instance reported 'Exiting...'. Awaiting shutdown...${RESET}"
+
+        # Check in a loop if the process is still running
+        local timeout=30  # Give 30 seconds
+        local waited=0
+
+        while pgrep -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR" > /dev/null; do
+            sleep 2
+            (( waited+=2 ))
+            if [ $waited -ge $timeout ]; then
+                echo -e "${RED}Server $instance didn't shut down within $timeout seconds. Forcing kill...${RESET}"
+                pkill -f "ArkAscendedServer.exe.*AltSaveDirectoryName=$SAVE_DIR"
+                break
+            fi
+        done
+
+        echo -e "${GREEN}Server for instance $instance has exited (or was force-killed).${RESET}"
         return 0
     else
         echo -e "${RED}Graceful shutdown failed or timed out. Forcing shutdown.${RESET}"
