@@ -80,22 +80,22 @@ send_rcon_to_all() {
 
 # Function to announce the restart to all players
 announce_restart() {
-    local total_restart_time=${announcement_times[0]} # Start with the first announcement time
-
-    # Send warnings according to the announcement_times array
+    # Send each announcement
     for i in "${!announcement_times[@]}"; do
         local time_before_restart=${announcement_times[$i]}
         local message="${announcement_messages[$i]}"
 
-        # Send the announcement to all instances
         send_rcon_to_all "serverchat $message"
         log_message "Announced: $message."
 
-        # Calculate the time to wait until the next announcement
+        # Only if there is a next value, calculate the time difference
         if [ $i -lt $((${#announcement_times[@]} - 1)) ]; then
-            local next_time=${announcement_times[$i+1]}
+            local next_time=${announcement_times[$((i+1))]}
             local sleep_time=$(( time_before_restart - next_time ))
-            sleep $sleep_time
+            sleep "$sleep_time"
+        else
+            # For the last entry: Wait for the defined time
+            sleep "$time_before_restart"
         fi
     done
 }
