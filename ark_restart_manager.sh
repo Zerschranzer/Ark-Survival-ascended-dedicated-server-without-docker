@@ -5,23 +5,19 @@
 # --------------------------------------------- CONFIGURATION STARTS HERE --------------------------------------------- #
 
 # Define your server instances here (use the names you use in ark_instance_manager.sh)
-instances=("instanceexample1" "instanceexample2")
+instances=("instanceexample1" "instanceexample2" )
 
 # Define the exact announcement times in seconds
-# Each value represents how many seconds before the restart the message should be sent
-announcement_times=(1800 1200 600 180 10)  # 30 min, 20 min, 10 min, 3 min, 10 sec before restart
+announcement_times=(1800 1200 600 180 10 )
 
 # Corresponding messages for each announcement time
 announcement_messages=(
     "Server restart in 30 minutes"
-    "server restart in 20 minutes"
+    "Server restart in 20 minutes"
     "Server restart in 10 minutes"
     "Server restart in 3 minutes"
     "Server restart in 10 seconds"
 )
-
-# Time to wait between starting instances (in seconds). The server needs enough time to load the config, bfore the next instance starts.
-start_wait_time=30
 
 # --------------------------------------------- CONFIGURATION ENDS HERE --------------------------------------------- #
 #                                                                                         \   |   /                   #
@@ -40,11 +36,12 @@ start_wait_time=30
 #   , -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _, -=-~  .-^- _  #
 #######################################################################################################################
 
-
 # Define script and configuration paths as variables
 script_dir="$(dirname "$(realpath "$0")")"
 ark_manager="$script_dir/ark_instance_manager.sh"
 log_file="$script_dir/ark_restart_manager.log"
+# Time to wait between starting instances (in seconds). The server needs enough time to load the config, before the next instance starts.
+start_wait_time=30
 
 # Function to log messages
 log_message() {
