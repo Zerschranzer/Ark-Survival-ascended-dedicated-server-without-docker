@@ -44,16 +44,16 @@ check_dependencies() {
     # Detect the package manager
     if command -v apt-get >/dev/null 2>&1; then
         package_manager="apt-get"
-        dependencies=("wget" "tar" "grep" "libc6:i386" "libstdc++6:i386" "libncursesw6:i386" "python3" "libfreetype6:i386" "libfreetype6:amd64" "pkill")
+        dependencies=("wget" "tar" "grep" "libc6:i386" "libstdc++6:i386" "libncursesw6:i386" "python3" "libfreetype6:i386" "libfreetype6:amd64" "pkill" "cron")
     elif command -v zypper >/dev/null 2>&1; then
         package_manager="zypper"
-        dependencies=("wget" "tar" "grep" "libX11-6-32bit" "libX11-devel-32bit" "gcc-32bit" "libexpat1-32bit" "libXext6-32bit" "python3" "pkill" "libfreetype6" "libfreetype6-32bit")
+        dependencies=("wget" "tar" "grep" "libX11-6-32bit" "libX11-devel-32bit" "gcc-32bit" "libexpat1-32bit" "libXext6-32bit" "python3" "pkill" "libfreetype6" "libfreetype6-32bit" "cron")
     elif command -v dnf >/dev/null 2>&1; then
         package_manager="dnf"
-        dependencies=("wget" "tar" "grep" "glibc-devel.i686" "ncurses-devel.i686" "libstdc++-devel.i686" "python3" "freetype" "procps-ng")
+        dependencies=("wget" "tar" "grep" "glibc-devel.i686" "ncurses-devel.i686" "libstdc++-devel.i686" "python3" "freetype" "procps-ng" "cronie")
     elif command -v pacman >/dev/null 2>&1; then
         package_manager="pacman"
-        dependencies=("wget" "tar" "grep" "lib32-libx11" "gcc-multilib" "lib32-expat" "lib32-libxext" "python" "freetype2")
+        dependencies=("wget" "tar" "grep" "lib32-libx11" "gcc-multilib" "lib32-expat" "lib32-libxext" "python" "freetype2" "cronie")
     else
         echo -e "${RED}Error: No supported package manager found on this system.${RESET}"
         exit 1
@@ -380,10 +380,31 @@ initialize_proton_prefix() {
     echo -e "${GREEN}Proton prefix initialized.${RESET}"
 }
 
+# Function to populate an array with available instances from INSTANCES_DIR
+get_available_instances() {
+    # Clear the array to avoid stale entries
+    available_instances=()
+
+    if [ -d "$INSTANCES_DIR" ]; then
+        # Read all directories (one per line) into the array
+        mapfile -t available_instances < <(ls -1 "$INSTANCES_DIR" 2>/dev/null)
+    fi
+}
+
 # Function to list all instances
 list_instances() {
+    # Reuse the helper function
+    get_available_instances
+
+    if [ ${#available_instances[@]} -eq 0 ]; then
+        echo -e "${RED}No instances found in '$INSTANCES_DIR'.${RESET}"
+        return
+    fi
+
     echo -e "${YELLOW}Available instances:${RESET}"
-    ls -1 "$INSTANCES_DIR" 2>/dev/null || echo -e "${RED}No instances found.${RESET}"
+    for inst in "${available_instances[@]}"; do
+        echo "$inst"
+    done
 }
 
 # Function to create or edit instance configuration
@@ -1165,7 +1186,138 @@ edit_configuration_menu() {
         esac
     done
 }
+# Function to configure the restart_manager.sh
+configure_companion_script() {
+    local companion_script="$BASE_DIR/ark_restart_manager.sh"
+    if [ ! -f "$companion_script" ]; then
+        echo -e "${RED}Error: Companion script not found at '$companion_script'.${RESET}"
+        return 1
+    fi
 
+    echo -e "${CYAN}-- Restart Manager Configuration --${RESET}"
+
+    # 1) Dynamically get all available instances
+    get_available_instances
+    if [ ${#available_instances[@]} -eq 0 ]; then
+        echo -e "${RED}No instances found in '$INSTANCES_DIR'. Returning to main menu.${RESET}"
+        return 0
+    fi
+
+    # Show them to the user
+    echo -e "${CYAN}Available instances:${RESET}"
+    local i
+    for i in "${!available_instances[@]}"; do
+        echo "$((i+1))) ${available_instances[$i]}"
+    done
+    echo -e "Type the numbers of the instances you want to choose (space-separated), or type 'all' to select all."
+    read -r user_input
+
+    local selected_instances=()
+
+    # 2) Parse user selection
+    if [[ "$user_input" == "all" ]]; then
+        selected_instances=("${available_instances[@]}")
+    else
+        local choices=($user_input)
+        for choice in "${choices[@]}"; do
+            local idx=$((choice - 1))
+            if (( idx >= 0 && idx < ${#available_instances[@]} )); then
+                selected_instances+=("${available_instances[$idx]}")
+            else
+                echo -e "${RED}Warning: '$choice' is not a valid selection and will be ignored.${RESET}"
+            fi
+        done
+    fi
+
+    if [ ${#selected_instances[@]} -eq 0 ]; then
+        echo -e "${RED}No valid instances selected.${RESET}"
+        return 1
+    fi
+
+    # 3) Ask for announcement times
+    echo -e "${CYAN}Enter announcement times in seconds (space-separated), e.g. '1800 1200 600 180 10':${RESET}"
+    read -r -a user_times
+
+    # 4) Ask for corresponding announcement messages
+    echo -e "${CYAN}Please enter one announcement message for each time above.${RESET}"
+    user_messages=()
+    for time in "${user_times[@]}"; do
+        echo -e "Message for $time seconds before restart:"
+        read -r msg
+        user_messages+=( "$msg" )
+    done
+
+    # Build the config block
+    local instances_str=""
+    for inst in "${selected_instances[@]}"; do
+        instances_str+="\"$inst\" "
+    done
+
+    local times_str=""
+    for t in "${user_times[@]}"; do
+        times_str+="$t "
+    done
+
+    local messages_str=""
+    for m in "${user_messages[@]}"; do
+        messages_str+="    \"$m\"\n"
+    done
+
+    local new_config_block="# --------------------------------------------- CONFIGURATION STARTS HERE --------------------------------------------- #
+
+# Define your server instances here (use the names you use in ark_instance_manager.sh)
+instances=($instances_str)
+
+# Define the exact announcement times in seconds
+announcement_times=($times_str)
+
+# Corresponding messages for each announcement time
+announcement_messages=(
+$messages_str)
+
+# --------------------------------------------- CONFIGURATION ENDS HERE --------------------------------------------- #"
+
+    # Backup companion script
+    cp "$companion_script" "$companion_script.bak"
+
+    # Replace old config block with new one via awk
+    awk -v new_conf="$new_config_block" '
+        BEGIN { skip=0 }
+        /# --------------------------------------------- CONFIGURATION STARTS HERE --------------------------------------------- #/ {
+            print new_conf
+            skip=1
+            next
+        }
+        /# --------------------------------------------- CONFIGURATION ENDS HERE --------------------------------------------- #/ {
+            skip=0
+            next
+        }
+        skip==0 { print }
+    ' "$companion_script.bak" > "$companion_script"
+
+    echo -e "${GREEN}Restart Manager script has been updated successfully.${RESET}"
+
+    # 5) Ask for cron job
+    echo -e "${CYAN}Would you like to schedule a daily cron job for server restart? [y/N]${RESET}"
+    read -r add_cron
+    if [[ "$add_cron" =~ ^[Yy]$ ]]; then
+        echo -e "${CYAN}At what time should the daily restart occur?${RESET}"
+        echo -e "${YELLOW}(Use 24-hour format: HH:MM, e.g., '16:00' for 4 PM or '03:00' for 3 AM)${RESET}"
+        read -r cron_time
+        local cron_hour=$(echo "$cron_time" | cut -d':' -f1)
+        local cron_min=$(echo "$cron_time" | cut -d':' -f2)
+
+        # 1) Read the current crontab (if any),
+        # 2) Remove all lines referencing our manager script,
+        # 3) Append a new line with the chosen schedule,
+        # 4) Save back to crontab
+        ( crontab -l 2>/dev/null | grep -v "$companion_script"
+        echo "$cron_min $cron_hour * * * $companion_script"
+        ) | crontab -
+
+        echo -e "${GREEN}Cron job scheduled daily at $cron_time.${RESET}"
+    fi
+}
 
 # Main menu using 'select'
 main_menu() {
@@ -1185,7 +1337,8 @@ main_menu() {
             "Show Running Instances"              # 9
             "Backup a World from Instance"        # 10
             "Load Backup to Instance"             # 11
-            "Exit"                                # 12
+            "Configure Restart Manager "          # 12
+            "Exit ARK Server Manager"             # 13
         )
 
         PS3="Please choose an option: "
@@ -1242,6 +1395,10 @@ main_menu() {
                     break
                     ;;
                 12)
+                    configure_companion_script
+                    break
+                    ;;
+                13)
                     echo -e "${GREEN}Exiting ARK Server Manager. Goodbye!${RESET}"
                     exit 0
                     ;;
