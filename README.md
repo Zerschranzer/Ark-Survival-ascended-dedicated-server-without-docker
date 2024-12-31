@@ -184,23 +184,31 @@ Each instance lives in `instances/<instance_name>` with its own configs and logs
 
 ## 7. Automated Restarts
 
-**`ark_restart_manager.sh`** automates scheduled restarts:
+The **ARK Server Manager** now makes it easy to configure automated restarts, tailored for users of all experience levels. Restart automation is integrated directly into the interactive menu, eliminating the need for manual configuration.
 
-1. **Announces** restarts at configurable intervals (e.g., 30 min, 20 min, 10 min).  
-2. **Stops** instances gracefully (then force if needed).  
-3. **Updates** the base server.  
-4. **Restarts** instances with a delay in between.
+### Configuration via the Interactive Menu
 
-### Configuration
+To set up automated restarts:
 
-Edit the top of `ark_restart_manager.sh`:
+1. Open the **ARK Server Manager** and select **"12) Configure Restart Manager"** from the main menu.  
+2. Follow the prompts to:
+   - Select the instances for which you want to enable automated restarts.  
+   - Define announcement times and messages for notifying players before the restart.  
+   - Schedule a daily restart time using Cron (e.g., every day at 3:00 AM).  
+
+The configuration is automatically applied, and any existing Cron jobs for the restart manager are updated or replaced. This ensures the process is both simple and error-free for all users.
+
+### Advanced: Manual Configuration
+
+For advanced users, manual configuration is still possible by editing the top of `ark_restart_manager.sh`:
 
 - `instances=("myserver1" "myserver2")`  
 - `announcement_times=(1800 1200 600 180 10)`  
 - `announcement_messages=("Server restart in 30 minutes" ... )`  
-- `start_wait_time=30` (seconds)
 
 ### Scheduling with Cron
+
+The interactive menu also automates the Cron job setup. If you prefer manual scheduling, you can still add the following to your crontab:
 
 ```bash
 crontab -e
