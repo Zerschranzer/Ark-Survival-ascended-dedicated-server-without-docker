@@ -977,7 +977,7 @@ backup_instance_world() {
     # Check if the server is running
     if is_server_running "$instance"; then
         echo -e "${RED}The server for instance '$instance' is running. Stop it before creating a backup.${RESET}"
-        return 1
+        return 0
     fi
 
     # -- List all world folders in $SERVER_FILES_DIR/ShooterGame/Saved/$instance --
