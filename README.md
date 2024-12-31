@@ -82,6 +82,8 @@ This repository provides a set of scripts—primarily **`ark_instance_manager.sh
    ```
    - This adds `asa-manager` to `~/.local/bin` (if on your PATH), so you can type `asa-manager` globally.
 
+![Installing or Updating the Base Server](https://raw.githubusercontent.com/Zerschranzer/Linux-ASA-Server-Manager/refs/heads/main/docs/images/Installing%E2%81%84Updating_Baseserver.png)
+
 ---
 
 ## 4. Usage
@@ -139,6 +141,8 @@ Each instance lives in `instances/<instance_name>` with its own configs and logs
 2. Enter a **unique name** (e.g., `island_server_1`, `gen2_pvp`); avoid extremely similar names like `instance` vs. `instance1`.  
 3. The script creates the folder structure and opens `instance_config.ini` for you to edit.
 
+![Create Instance](https://raw.githubusercontent.com/Zerschranzer/Linux-ASA-Server-Manager/refs/heads/main/docs/images/Create_Instance.png)
+
 ### 5.2 Configuration Files
 
 1. **`instance_config.ini`**  
@@ -180,6 +184,8 @@ Each instance lives in `instances/<instance_name>` with its own configs and logs
 
 **Restores** are menu-driven under **"Load Backup to Instance"**. This overwrites existing world files with those from your chosen archive.
 
+![Backup and Restore Menu](https://raw.githubusercontent.com/Zerschranzer/Linux-ASA-Server-Manager/refs/heads/main/docs/images/Backup.png)
+
 ---
 
 ## 7. Automated Restarts
@@ -197,6 +203,8 @@ To set up automated restarts:
    - Schedule a daily restart time using Cron (e.g., every day at 3:00 AM).  
 
 The configuration is automatically applied, and any existing Cron jobs for the restart manager are updated or replaced. This ensures the process is both simple and error-free for all users.
+
+![Restart Manager Menu](https://raw.githubusercontent.com/Zerschranzer/Linux-ASA-Server-Manager/refs/heads/main/docs/images/Restart_Manager.png)
 
 ### Advanced: Manual Configuration
 
