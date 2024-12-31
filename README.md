@@ -244,6 +244,8 @@ Or send a single command:
 
 **`ark_instance_manager.sh`** uses `rcon.py` for graceful shutdown and interactive RCON access from the menu.
 
+![RCON Console Example](https://raw.githubusercontent.com/Zerschranzer/Linux-ASA-Server-Manager/refs/heads/main/docs/images/RCON_Example.png)
+
 ---
 
 ## 9. Troubleshooting
